@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────
+   Tailwind v4 tokens (source of truth)
+   - Any --color-<name> becomes utilities: bg-<name>, text-<name>, border-<name>
+   - Add font-size tokens so text-3xl, text-xl, etc. exist
+   ────────────────────────────────────────────────────────── */
+@theme {
+  /* Light mode colors */
+  --color-background: 210 40% 98%;
+  --color-surface: 0 0% 100%;
+  --color-primary: 209 100% 56%;            /* #1E90FF */
+  --color-secondary: 45 100% 70%;           /* #FFD369 */
+  --color-success: 145 63% 49%;             /* #2ECC71 */
+  --color-warning: 33 100% 55%;             /* #FF9F1C */
+  --color-error: 355 78% 57%;               /* #E63946 */
+  --color-border: 210 18% 88%;
+
+  /* Text semantics used by our components */
+  --color-text: 210 44% 12%;                /* #0D1B2A */
+  --color-text-secondary: 206 11% 40%;      /* #5C6B73 */
+
+  /* Extra semantics (ShadCN-friendly & charts) */
+  --color-foreground: 210 44% 12%;
+  --color-card: 0 0% 100%;
+  --color-card-foreground: 210 44% 12%;
+  --color-popover: 0 0% 100%;
+  --color-popover-foreground: 210 44% 12%;
+  --color-primary-foreground: 0 0% 98%;
+  --color-secondary-foreground: 210 44% 12%;
+  --color-muted: 210 20% 96%;
+  --color-muted-foreground: 210 8% 45%;
+  --color-accent: 210 20% 96%;
+  --color-accent-foreground: 210 44% 12%;
+  --color-destructive: 15 86% 57%;
+  --color-input: 210 18% 88%;
+  --color-ring: 210 12% 45%;
+
+  --color-chart-1: 41 83% 54%;
+  --color-chart-2: 185 45% 45%;
+  --color-chart-3: 227 30% 45%;
+  --color-chart-4: 84 80% 60%;
+  --color-chart-5: 70 80% 55%;
+
+  --color-sidebar: 0 0% 98%;
+  --color-sidebar-foreground: 210 44% 12%;
+  --color-sidebar-primary: 209 100% 56%;
+  --color-sidebar-primary-foreground: 0 0% 98%;
+  --color-sidebar-accent: 210 20% 96%;
+  --color-sidebar-accent-foreground: 210 44% 12%;
+  --color-sidebar-border: 210 18% 88%;
+  --color-sidebar-ring: 210 12% 45%;
+
+  /* Glyph accents (icons) */
+  --color-glyph-planet: 45 100% 70%;
+  --color-glyph-sign: 271 76% 60%;
+
+  /* Radii & shadows */
+  --radius-2xl: 1.25rem;
+  --shadow-soft: 0 6px 24px rgba(0,0,0,.08);
+
+  /* Font sizes (required so text-3xl, etc. work) */
+  --text-sm: 0.875rem;              --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;                --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;              --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;               --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;               --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;             --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;              --text-4xl--line-height: 2.5rem;
+  --text-5xl: 3rem;                 --text-5xl--line-height: 1;
+}
+
+/* Dark mode overrides: redefine the same --color-* tokens */
+.dark {
+  --color-background: 210 50% 9%;           /* #0D1B2A */
+  --color-surface: 213 29% 18%;             /* #1F2D3D */
+  --color-primary: 209 100% 56%;
+  --color-secondary: 45 100% 70%;
+  --color-success: 145 63% 46%;
+  --color-warning: 28 100% 55%;
+  --color-error: 0 100% 65%;
+  --color-border: 213 30% 22%;
+
+  --color-text: 0 0% 93%;                   /* #EDEDED */
+  --color-text-secondary: 210 14% 62%;      /* #9BA4B5 */
+
+  --color-foreground: 0 0% 93%;
+  --color-card: 210 15% 15%;
+  --color-card-foreground: 0 0% 93%;
+  --color-popover: 210 15% 15%;
+  --color-popover-foreground: 0 0% 93%;
+  --color-primary-foreground: 210 44% 12%;
+  --color-secondary-foreground: 0 0% 93%;
+  --color-muted: 210 18% 18%;
+  --color-muted-foreground: 210 12% 70%;
+  --color-accent: 210 18% 18%;
+  --color-accent-foreground: 0 0% 93%;
+  --color-destructive: 0 85% 60%;
+  --color-input: 210 18% 22%;
+  --color-ring: 210 12% 55%;
+
+  --color-chart-1: 264 70% 48%;
+  --color-chart-2: 162 60% 55%;
+  --color-chart-3: 70 65% 55%;
+  --color-chart-4: 304 70% 55%;
+  --color-chart-5: 16 70% 50%;
+
+  --color-sidebar: 210 22% 12%;
+  --color-sidebar-foreground: 0 0% 93%;
+  --color-sidebar-primary: 264 70% 48%;
+  --color-sidebar-primary-foreground: 0 0% 93%;
+  --color-sidebar-accent: 210 18% 18%;
+  --color-sidebar-accent-foreground: 0 0% 93%;
+  --color-sidebar-border: 210 18% 22%;
+  --color-sidebar-ring: 210 12% 60%;
+
+  --color-glyph-planet: 45 100% 70%;
+  --color-glyph-sign: 271 76% 60%;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Base / Typography
+   ────────────────────────────────────────────────────────── */
+html, body { height: 100%; scroll-behavior: smooth; }
+body { @apply bg-background text-text antialiased; }
+
+h1 { @apply text-3xl font-bold; }
+h2 { @apply text-2xl font-semibold; }
+h3 { @apply text-xl font-semibold; }
+
+/* Convenience helper for cards */
+.card { @apply bg-surface rounded-2xl border border-border shadow-[var(--shadow-soft)]; }
+
+/* Normalize default border + focus ring to tokens (optional) */
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
+}

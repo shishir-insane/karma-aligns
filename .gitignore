@@ -9,3 +9,4 @@ server/backend/__pycache__/
 server/ephe/
 ui/node_modules/
 server/backend/api/__pycache__/
+**/__pycache__/*.pyc
