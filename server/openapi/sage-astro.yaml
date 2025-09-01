@@ -115,6 +115,7 @@ paths:
   /api/v1/planets:
     get:
       summary: Planet longitudes (supports chart_id or raw params)
+    # NOTE: 'retrograde' may be null if your library uses 'retro' internally
       parameters:
         - $ref: '#/components/parameters/chart_id'
         - $ref: '#/components/parameters/dob'
@@ -312,6 +313,40 @@ paths:
         "501":
           $ref: '#/components/responses/MissingDependency'
 
+  /api/v1/varsha/details:
+    get:
+      summary: Varshaphal subfeatures (Muntha, Sahams, Mudda daśā, annual yogas/aspects)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+        - $ref: '#/components/parameters/varsha_year'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  varsha_year: { type: integer }
+                  muntha: { type: object, nullable: true }
+                  sahams: { type: object, nullable: true }
+                  mudda_dasha: { type: object, nullable: true }
+                  annual:
+                    type: object
+                    properties:
+                      yogas: { type: object, nullable: true }
+                      aspects: { type: object, nullable: true }
+                  chart_id: { type: string }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
   /api/v1/acg:
     get:
       summary: Astrocartography lines + advice
@@ -386,8 +421,8 @@ paths:
                       type: object
                       properties:
                         lon: { type: number }
-                        retrograde: { type: boolean }
-                        speed: { type: number }
+                        retrograde: { type: boolean, nullable: true }
+                        speed: { type: number, nullable: true }
                         sign_idx: { type: integer }
                         sign: { type: string, nullable: true }
                         nakshatra_idx: { type: integer }
@@ -407,9 +442,9 @@ paths:
         "400": { $ref: '#/components/responses/BadRequest' }
         "501": { $ref: '#/components/responses/MissingDependency' }
 
-  /api/v1/varsha/details:
+  /api/v1/panchanga:
     get:
-      summary: Varshaphal subfeatures (Muntha, Sahams, Mudda daśā, annual yogas/aspects)
+      summary: Panchanga (tithi, nakṣatra, yoga, karana, weekday)
       parameters:
         - $ref: '#/components/parameters/chart_id'
         - $ref: '#/components/parameters/dob'
@@ -417,27 +452,157 @@ paths:
         - $ref: '#/components/parameters/tz'
         - $ref: '#/components/parameters/lat'
         - $ref: '#/components/parameters/lon'
-        - $ref: '#/components/parameters/ayanamsa'
-        - $ref: '#/components/parameters/hsys'
-        - $ref: '#/components/parameters/varsha_year'
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  varsha_year: { type: integer }
-                  muntha: { type: object, nullable: true }
-                  sahams: { type: object, nullable: true }
-                  mudda_dasha: { type: object, nullable: true }
-                  annual:
-                    type: object
-                    properties:
-                      yogas: { type: object, nullable: true }
-                      aspects: { type: object, nullable: true }
-                  chart_id: { type: string }
+                $ref: '#/components/schemas/PanchangaResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/ashtakavarga:
+    get:
+      summary: Sarva & per-planet Ashtakavarga (baseline)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AshtakavargaResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/avasthas:
+    get:
+      summary: Avasthas (Baladi baseline)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvasthasResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/aspects:
+    get:
+      summary: Graha dṛṣṭi (sign-based aspects)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AspectsResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/upagrahas:
+    get:
+      summary: Upagrahas (if available)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpagrahasResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/bhava-bala:
+    get:
+      summary: Bhava Bala (benefic/malefic counts per house)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BhavaBalaResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/arudha:
+    get:
+      summary: Arudha padas A1..A12
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArudhaResponse'
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/kp:
+    get:
+      summary: KP significators (sign, star, sub) for planets and cusps
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KPResponse'
         "400": { $ref: '#/components/responses/BadRequest' }
         "501": { $ref: '#/components/responses/MissingDependency' }
 
@@ -639,8 +804,8 @@ components:
             type: object
             properties:
               lon: { type: number }
-              speed: { type: number }
-              retrograde: { type: boolean }
+              speed: { type: number, nullable: true }
+              retrograde: { type: boolean, nullable: true }
         chart_id: { type: string }
 
     RashiResponse:
@@ -732,3 +897,134 @@ components:
         features:
           type: object
           additionalProperties: { type: boolean }
+
+    PanchangaResponse:
+      type: object
+      properties:
+        panchanga:
+          type: object
+          properties:
+            tithi:
+              type: object
+              properties:
+                idx: { type: integer }
+                name: { type: string }
+                progress: { type: number }
+            yoga:
+              type: object
+              properties:
+                idx: { type: integer }
+                name: { type: string }
+                progress: { type: number }
+            karana:
+              type: object
+              properties:
+                idx: { type: integer }
+                name: { type: string }
+            nakshatra:
+              type: object
+              properties:
+                idx: { type: integer }
+                name: { type: string }
+                pada: { type: integer }
+                progress: { type: number }
+            weekday: { type: string }
+        chart_id: { type: string }
+
+    AshtakavargaResponse:
+      type: object
+      properties:
+        ashtakavarga:
+          type: object
+          properties:
+            pav:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: integer }
+            sav:
+              type: array
+              items: { type: integer }
+            asc_idx: { type: integer }
+        chart_id: { type: string }
+
+    AvasthasResponse:
+      type: object
+      properties:
+        avasthas:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              baladi: { type: string }
+        chart_id: { type: string }
+
+    AspectsResponse:
+      type: object
+      properties:
+        aspects:
+          type: array
+          items:
+            type: object
+            properties:
+              from: { type: string }
+              to: { type: string }
+              kind: { type: string, enum: [full, special] }
+              angle: { type: number }
+              orb: { type: number }
+        chart_id: { type: string }
+
+    UpagrahasResponse:
+      type: object
+      properties:
+        upagrahas: { type: object }
+        chart_id: { type: string }
+
+    BhavaBalaResponse:
+      type: object
+      properties:
+        bhava_bala:
+          type: array
+          items:
+            type: object
+            properties:
+              house: { type: integer }
+              benefics: { type: integer }
+              malefics: { type: integer }
+              net: { type: integer }
+        chart_id: { type: string }
+
+    ArudhaResponse:
+      type: object
+      properties:
+        arudha:
+          type: object
+          additionalProperties:
+            type: integer
+            nullable: true
+        chart_id: { type: string }
+
+    KPResponse:
+      type: object
+      properties:
+        kp:
+          type: object
+          properties:
+            planets:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  sign_lord: { type: string }
+                  star_lord: { type: string }
+                  sub_lord:  { type: string }
+            cusps:
+              type: array
+              items:
+                type: object
+                properties:
+                  cusp: { type: integer }
+                  sign_lord: { type: string }
+                  star_lord: { type: string }
+                  sub_lord:  { type: string }
+        chart_id: { type: string }
