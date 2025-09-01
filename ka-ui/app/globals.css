@@ -136,3 +136,93 @@ h3 { @apply text-xl font-semibold; }
   * { @apply border-border outline-ring/50; }
   body { @apply bg-background text-foreground; }
 }
+
+/* ──────────────────────────────────────────────────────────
+   Cosmic background, glass cards, animated borders & focus
+   ────────────────────────────────────────────────────────── */
+
+/* Responsive max-width container rhythm */
+.container-astro {
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+/* Star field + subtle grid background.
+   Uses current tokens so it looks great in both themes. */
+.bg-cosmos {
+  position: relative;
+  background:
+    radial-gradient(1200px 600px at 20% -20%, hsl(var(--color-primary)/0.10), transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, hsl(var(--color-secondary)/0.10), transparent 60%),
+    radial-gradient(800px 500px at 50% 120%, hsl(var(--color-primary)/0.06), transparent 60%),
+    linear-gradient(hsl(var(--color-background)), hsl(var(--color-background)));
+}
+.bg-cosmos::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to right, hsl(var(--color-border)/0.18) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(to bottom, hsl(var(--color-border)/0.18) 1px, transparent 1px) 0 0 / 64px 64px;
+  mask-image: radial-gradient(100% 100% at 50% 10%, black 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glass surface (cards, headers) */
+.glass {
+  background-color: hsl(var(--color-surface)/0.7);
+  backdrop-filter: blur(8px) saturate(110%);
+}
+
+/* Animated gradient border — use with .border-ambient on a relatively positioned element */
+.border-ambient {
+  position: relative;
+  border: 1px solid hsl(var(--color-border));
+  border-radius: var(--radius-2xl);
+}
+.border-ambient::after {
+  content: "";
+  position: absolute; inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 180deg,
+    hsl(var(--color-primary)/0.6),
+    hsl(var(--color-secondary)/0.6),
+    hsl(var(--color-primary)/0.6)
+  );
+  filter: blur(8px);
+  opacity: 0; transition: opacity .25s ease;
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask-composite: exclude; -webkit-mask-composite: xor;
+  padding: 1px;
+  pointer-events: none;
+}
+.border-ambient:hover::after { opacity: .3; }
+
+/* Focus ring tuned to tokens */
+:where(button, a, input, select, [role="button"]) {
+  outline-color: hsl(var(--color-ring)/.4);
+  outline-offset: 2px;
+}
+
+/* Card polish — replaces .card if you want nicer defaults */
+.card-astro {
+  border-radius: var(--radius-2xl);
+  border: 1px solid hsl(var(--color-border));
+  background: linear-gradient(
+      to bottom,
+      hsl(var(--color-surface)/0.92),
+      hsl(var(--color-surface)/0.86)
+    );
+  box-shadow: 0 6px 24px rgba(0,0,0,.08);
+}
+
+/* Motion-safe helpers */
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\:transition-none { transition: none !important; }
+}
+
+@keyframes ka-spin { to { transform: rotate(360deg) } }
+.spin-slow { animation: ka-spin 20s linear infinite; }
+
