@@ -1,0 +1,10 @@
+.DS_Store
+server/Archive*.zip
+
+/*/__pycache__/
+
+/*/venv/
+server/astrology/__pycache__/
+server/backend/__pycache__/
+server/ephe/
+ui/node_modules/

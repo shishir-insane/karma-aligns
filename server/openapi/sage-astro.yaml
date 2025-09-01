@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info: { title: Sage Astro API, version: 1.0.0 }
+paths:
+  /api/v1/health:
+    get: { summary: Health check, responses: { "200": { description: OK } } }
+  /api/v1/compute:
+    post:
+      summary: Compute full kundli payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dob, tob, lat, lon]
+              properties:
+                name: { type: string }
+                dob:  { type: string, example: "1984-09-24" }
+                tob:  { type: string, example: "17:30" }
+                tz:   { type: string, example: "+05:30" }
+                lat:  { type: number }
+                lon:  { type: number }
+                varsha_year: { type: integer }
+                vargas: { type: array, items: { type: string } }
+      responses: { "200": { description: Computed chart payload } }
