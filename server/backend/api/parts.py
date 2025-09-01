@@ -2,35 +2,43 @@
 """
 Small, focused endpoints that mirror slices of /api/v1/compute.
 
-Exposes:
-- GET  /api/v1/chart/id              → stable chart_id from inputs (also seeds cache mapping)
-- GET  /api/v1/asc                   → Ascendant {lon, idx}
-- GET  /api/v1/houses                → Placidus cusps + asc_sidereal
-- GET  /api/v1/planets               → minimal planet longs/speeds/retro flags
-- GET  /api/v1/charts/rashi          → rashi chart (12 lists) + asc_idx
-- GET  /api/v1/charts/chalit         → chalit chart (12 lists)
-- GET  /api/v1/vargas                → vargas maps (Dx: {asc_idx, houses})
-- GET  /api/v1/table/planets         → formatted planet table
-- GET  /api/v1/shadbala              → components + total
-- GET  /api/v1/dasha                 → dasha systems (Vimshottari/Yogini/Ashtottari/Kalachakra)
-- GET  /api/v1/varsha                → varshaphala (+ predictions if available)
-- GET  /api/v1/acg                   → astrocartography lines + advice
-- GET  /api/v1/symbols               → rashis + sign_symbols
+Exposes (selected):
+- GET  /api/v1/chart/id
+- GET  /api/v1/asc
+- GET  /api/v1/houses
+- GET  /api/v1/planets
+- GET  /api/v1/charts/rashi
+- GET  /api/v1/charts/chalit
+- GET  /api/v1/vargas
+- GET  /api/v1/table/planets
+- GET  /api/v1/shadbala
+- GET  /api/v1/dasha
+- GET  /api/v1/varsha
+- GET  /api/v1/acg
+- GET  /api/v1/symbols
+- GET  /api/v1/panchanga
+- GET  /api/v1/ashtakavarga
+- GET  /api/v1/yogas
+- GET  /api/v1/avasthas
+- GET  /api/v1/aspects
+- GET  /api/v1/upagrahas
+- GET  /api/v1/bhava-bala
+- GET  /api/v1/arudha
+- GET  /api/v1/kp
 
-Query:
-  Either pass:
-    ?dob=YYYY-MM-DD&tob=HH:MM&tz=±HH:MM&lat=..&lon=..[&ayanamsa=lahiri&hsys=P]
-  Or:
-    ?chart_id=...  (must have been seeded via /api/v1/chart/id)
+NEW:
+- GET  /api/v1/grahas          → normalized graha details (sign, nakṣatra+pada, house, lords)
+- GET  /api/v1/varsha/details  → Varshaphal subfeatures (Muntha, Sahams, Mudda daśā, annual yogas/aspects)
 
-Notes:
-- All endpoints call init_swe() to honor EPHE_PATH/SIDEREAL_AYANAMSA from config.
-- Caching (10 min default) uses Flask-Caching if present.
-- Errors are plain JSON with {"error":{...}}; no stack traces.
+All endpoints support either:
+  ?chart_id=...    (resolved from cache seeded via /api/v1/chart/id)
+OR raw query:
+  ?dob=YYYY-MM-DD&tob=HH:MM&tz=±HH:MM&lat=..&lon=..[&ayanamsa=lahiri&hsys=P]
 """
 
 from __future__ import annotations
 from datetime import datetime, timedelta
+
 from flask import jsonify, request
 from flask import current_app as app
 
@@ -46,8 +54,37 @@ from .common import (
 
 from astrology.swe_utils import sign_index
 
-# ----------------- helpers -----------------
+# ---------- tolerant import helper ----------
+def _imp_first(candidates):
+    """
+    candidates: list[(module_path, attribute)]
+    returns attribute or None (first that imports)
+    """
+    for mod, name in candidates:
+        try:
+            m = __import__(mod, fromlist=[name])
+            return getattr(m, name)
+        except Exception:
+            continue
+    return None
 
+# ---------- optional symbol maps ----------
+try:
+    from astrology.symbols import (
+        SIGN_NAMES,
+        NAKSHATRA_NAMES,
+        SIGN_LORDS,
+        NAKSHATRA_LORDS,
+        SIGN_SYMBOLS,
+    )
+except Exception:
+    SIGN_NAMES = None
+    NAKSHATRA_NAMES = None
+    SIGN_LORDS = None
+    NAKSHATRA_LORDS = None
+    SIGN_SYMBOLS = None
+
+# ---------- helpers ----------
 def _tz_hours(s: str) -> float:
     s = (s or "").strip()
     if not s:
@@ -62,7 +99,7 @@ def _tz_hours(s: str) -> float:
 def _json_error(msg: str, *, code: int = 400, type_: str = "bad_request"):
     return jsonify({"error": {"type": type_, "message": msg}}), code
 
-# ----------------- endpoints -----------------
+# ---------- endpoints ----------
 
 @api.get("/chart/id")
 def chart_id():
@@ -231,10 +268,7 @@ def charts_chalit():
 
 @api.get("/vargas")
 def vargas():
-    """
-    GET /api/v1/vargas?vargas=D9,D10 (default D9,D10)
-    Shape mirrors /compute → charts.vargas.{Dx}: {asc_idx, houses}.  (matches your payload)  # see compute payload
-    """
+    """Vargas maps (Dx → {asc_idx, houses}); ?vargas=D9,D10 (default)."""
     try:
         dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
     except ValueError as e:
@@ -257,7 +291,7 @@ def vargas():
     tz_h = _tz_hours(tz)
     dt = datetime.fromisoformat(f"{dob}T{tob}:00")
     p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
-    varga_maps = compute_vargas(p, wanted_list)  # -> {Dx: {asc_idx, houses}} :contentReference[oaicite:4]{index=4}
+    varga_maps = compute_vargas(p, wanted_list)  # -> {Dx:{asc_idx,houses}}
     payload = {"vargas": varga_maps, "chart_id": chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
     cache_set(key, payload)
     return jsonify(payload)
@@ -265,9 +299,7 @@ def vargas():
 
 @api.get("/table/planets")
 def table_planets():
-    """
-    Returns the formatted planet table (same as compute.table).
-    """
+    """Formatted planet table (same shape as compute.table)."""
     try:
         dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
     except ValueError as e:
@@ -297,9 +329,7 @@ def table_planets():
 
 @api.get("/shadbala")
 def shadbala():
-    """
-    Returns components + total, matching your compute payload.  :contentReference[oaicite:5]{index=5}
-    """
+    """Shadbala components + total."""
     try:
         dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
     except ValueError as e:
@@ -322,7 +352,7 @@ def shadbala():
     p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
     _, asc_lon = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
     asc_idx = sign_index(asc_lon)
-    sb = compute_shadbala(p, asc_idx, None, local_hour=dt.hour)  # chalit not needed for totals in your lib
+    sb = compute_shadbala(p, asc_idx, None, local_hour=dt.hour)
     payload = {"shadbala": sb, "chart_id": chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
     cache_set(key, payload)
     return jsonify(payload)
@@ -330,11 +360,7 @@ def shadbala():
 
 @api.get("/dasha")
 def dasha():
-    """
-    Returns all dasha systems present in your compute payload under one key:
-      { "dasha": { "Vimshottari": {...}, "Yogini": {...}, "Ashtottari": {...}, "Kalachakra": {...} } }
-    Shapes include `active` and `timeline` like your sample.  :contentReference[oaicite:6]{index=6}
-    """
+    """Dasha systems (Vimshottari, Yogini, Ashtottari, Kalachakra)."""
     try:
         dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
     except ValueError as e:
@@ -362,9 +388,9 @@ def dasha():
     payload = {
         "dasha": {
             "Vimshottari": compute_vimsottari(dt, tz_h, moon_lon),
-            "Yogini": compute_yogini(dt, tz_h, moon_lon),
-            "Ashtottari": compute_ashtottari(dt, tz_h, moon_lon),
-            "Kalachakra": compute_kalachakra(dt, tz_h, moon_lon),
+            "Yogini":      compute_yogini(dt, tz_h, moon_lon),
+            "Ashtottari":  compute_ashtottari(dt, tz_h, moon_lon),
+            "Kalachakra":  compute_kalachakra(dt, tz_h, moon_lon),
         },
         "chart_id": chart_id_for(dob, tob, tz, lat, lon, ayan, hs),
     }
@@ -374,18 +400,13 @@ def dasha():
 
 @api.get("/varsha")
 def varsha():
-    """
-    Varshaphala year: uses request ?varsha_year=YYYY, else defaults to local-now (tz) year + 1.
-    Returns {varsha, varsha_predictions?}. Mirrors compute payload shape.
-    """
+    """Varshaphala; defaults to request's local (tz) year + 1 when varsha_year is absent."""
     try:
         dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
     except ValueError as e:
         return _json_error(str(e), code=400)
 
     init_swe()
-
-    # derive local "now" in same tz as request
     tz_h = _tz_hours(tz)
     local_now = datetime.utcnow() + timedelta(hours=tz_h)
     varsha_year = request.args.get("varsha_year", type=int)
@@ -419,10 +440,7 @@ def varsha():
 
 @api.get("/acg")
 def acg():
-    """
-    Astrocartography: returns {"acg": {"lines": {...}, "advice": {...}}}
-    Shape mirrors your compute response (lines + plain-language advice).  :contentReference[oaicite:7]{index=7}
-    """
+    """Astrocartography lines + advice."""
     try:
         dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
     except ValueError as e:
@@ -448,12 +466,512 @@ def acg():
 
 @api.get("/symbols")
 def symbols():
-    """
-    Returns rashis + sign_symbols to let the client label charts without calling /compute.
-    """
+    """Rashis + sign symbols (for client labels)."""
     try:
         from astrology.symbols import SIGN_NAMES, SIGN_SYMBOLS
     except Exception:
         return _json_error("astrology package not importable", code=501, type_="missing_dependency")
-
     return jsonify({"rashis": SIGN_NAMES, "sign_symbols": SIGN_SYMBOLS})
+
+
+# -------- optional feature endpoints (best-effort, may 501 if module truly absent) --------
+
+@api.get("/panchanga")
+def panchanga():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"panchanga|{cid}" if cid else f"panchanga|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    fn = _imp_first([
+        ("astrology.panchanga","compute_panchanga"),
+        ("astrology.panchanga","panchanga"),
+        ("astrology.panchang","compute_panchanga"),
+    ])
+    if not fn:
+        return _json_error("panchanga not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz)
+    dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    data = fn(dt, tz_h, lat, lon)
+    payload = {"panchanga": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/ashtakavarga")
+def ashtakavarga():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"ashtakavarga|{cid}" if cid else f"ashtakavarga|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.ashtakavarga import compute_ashtakavarga
+    except Exception:
+        return _json_error("ashtakavarga not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    planets = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    _, asc_lon = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    asc_idx = sign_index(asc_lon)
+    data = compute_ashtakavarga(planets, asc_idx)
+    payload = {"ashtakavarga": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/yogas")
+def yogas():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"yogas|{cid}" if cid else f"yogas|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.charts import chalit_from_longitudes
+        from astrology.yogas import compute_yogas
+    except Exception:
+        return _json_error("yogas not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, _ = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    chalit = chalit_from_longitudes(p, cusps)
+    # asc index from ascendant lon
+    asc_idx = sign_index(cusps[0]) if isinstance(cusps,(list,tuple)) and len(cusps)>0 else 0
+    data = compute_yogas(p, asc_idx, chalit)
+    payload = {"yogas": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/avasthas")
+def avasthas():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"avasthas|{cid}" if cid else f"avasthas|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.charts import chalit_from_longitudes
+        from astrology.avasthas import compute_avasthas
+    except Exception:
+        return _json_error("avasthas not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, _ = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    chalit = chalit_from_longitudes(p, cusps)
+    asc_idx = sign_index(cusps[0]) if isinstance(cusps,(list,tuple)) and len(cusps)>0 else 0
+    data = compute_avasthas(p, asc_idx, chalit)
+    payload = {"avasthas": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/aspects")
+def aspects():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"aspects|{cid}" if cid else f"aspects|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.charts import chalit_from_longitudes
+        from astrology.aspects import compute_aspects
+    except Exception:
+        return _json_error("aspects not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, _ = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    chalit = chalit_from_longitudes(p, cusps)
+    asc_idx = sign_index(cusps[0]) if isinstance(cusps,(list,tuple)) and len(cusps)>0 else 0
+    data = compute_aspects(p, asc_idx, chalit)
+    payload = {"aspects": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/upagrahas")
+def upagrahas():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"upagrahas|{cid}" if cid else f"upagrahas|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    fn = _imp_first([
+        ("astrology.upagrahas","compute_upagrahas"),
+        ("astrology.upagrahas","upagrahas"),
+    ])
+    if not fn:
+        return _json_error("upagrahas not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    data = fn(dt, tz_h, lat, lon)
+    payload = {"upagrahas": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/bhava-bala")
+def bhava_bala():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"bhavabala|{cid}" if cid else f"bhavabala|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.charts import chalit_from_longitudes
+        from astrology.bhava_bala import compute_bhava_bala
+    except Exception:
+        return _json_error("bhava_bala not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, _ = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    chalit = chalit_from_longitudes(p, cusps)
+    data = compute_bhava_bala(p, chalit)
+    payload = {"bhava_bala": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/arudha")
+def arudha():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"arudha|{cid}" if cid else f"arudha|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.charts import chalit_from_longitudes
+        from astrology.arudha import compute_arudha
+    except Exception:
+        return _json_error("arudha not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, _ = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    chalit = chalit_from_longitudes(p, cusps)
+    asc_idx = sign_index(cusps[0]) if isinstance(cusps,(list,tuple)) and len(cusps)>0 else 0
+    data = compute_arudha(p, asc_idx, chalit)
+    payload = {"arudha": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/kp")
+def kp():
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+    init_swe()
+    key = f"kp|{cid}" if cid else f"kp|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.kp import compute_kp_significators
+    except Exception:
+        return _json_error("kp not available", code=501, type_="missing_dependency")
+    tz_h = _tz_hours(tz); dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    p = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, _ = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    data = compute_kp_significators(p, cusps)
+    payload = {"kp": data, "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs)}
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+# ===================== NEW ENDPOINTS =====================
+
+@api.get("/grahas")
+def grahas():
+    """
+    Normalized graha details for UI:
+      - lon/retro/speed
+      - sign_idx + sign name
+      - nakshatra_idx + name + pada
+      - house number (from chalit, when available)
+      - lords: sign, nakshatra, and house_lordship[] (whole-sign houses this graha rules)
+    """
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+
+    init_swe()
+    key = f"grahas|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+
+    try:
+        from astrology.planets import compute_planets
+        from astrology.houses import compute_cusps
+        from astrology.charts import chalit_from_longitudes
+    except Exception:
+        return _json_error("astrology package not importable", code=501, type_="missing_dependency")
+
+    tz_h = _tz_hours(tz)
+    dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+
+    planets = compute_planets(dt, tz_h, lat, lon, ayanamsa=ayan)
+    cusps, asc_lon = compute_cusps(dt, tz_h, lat, lon, hsys=hs)
+    asc_idx = sign_index(asc_lon)
+
+    # chalit → to derive house number per planet
+    house_by_planet = {}
+    try:
+        chalit = chalit_from_longitudes(planets, cusps)  # 12 buckets of planet names
+        for i, bucket in enumerate(chalit, start=1):
+            for name in bucket:
+                house_by_planet[name] = i
+    except Exception:
+        pass
+
+    def _sign_idx_from_lon(lon_deg: float) -> int:
+        return int((lon_deg % 360.0) // 30.0)
+
+    def _nak_pada_from_lon(lon_deg: float):
+        span = 360.0 / 27.0  # 13°20'
+        pada_span = span / 4.0  # 3°20'
+        d = lon_deg % 360.0
+        nak_idx = int(d // span)
+        pada = int(((d % span) // pada_span)) + 1
+        return nak_idx, pada
+
+    # whole-sign house → sign index list (H1..H12)
+    house_sign_idx = [(asc_idx + (h - 1)) % 12 for h in range(1, 13)]
+
+    # lord helpers (fallback to functions if symbol arrays not present)
+    sign_lord_fn = _imp_first([
+        ("astrology.lords", "sign_lord"),
+        ("astrology.lords", "get_sign_lord"),
+    ])
+    nak_lord_fn = _imp_first([
+        ("astrology.lords", "nakshatra_lord"),
+        ("astrology.lords", "get_nakshatra_lord"),
+    ])
+
+    out = {}
+    for pname, pdata in planets.items():
+        lon_deg = float(pdata.get("lon", 0.0))
+        retro = bool(pdata.get("retrograde"))
+        speed = pdata.get("speed")
+
+        sidx = _sign_idx_from_lon(lon_deg)
+        sname = SIGN_NAMES[sidx] if SIGN_NAMES and 0 <= sidx < len(SIGN_NAMES) else None
+
+        nidx, pada = _nak_pada_from_lon(lon_deg)
+        nname = NAKSHATRA_NAMES[nidx] if NAKSHATRA_NAMES and 0 <= nidx < len(NAKSHATRA_NAMES) else None
+
+        # lords
+        if SIGN_LORDS and 0 <= sidx < len(SIGN_LORDS):
+            sign_lord = SIGN_LORDS[sidx]
+        elif sign_lord_fn:
+            try:
+                sign_lord = sign_lord_fn(sidx)
+            except Exception:
+                sign_lord = None
+        else:
+            sign_lord = None
+
+        if NAKSHATRA_LORDS and 0 <= nidx < len(NAKSHATRA_LORDS):
+            nak_lord = NAKSHATRA_LORDS[nidx]
+        elif nak_lord_fn:
+            try:
+                nak_lord = nak_lord_fn(nidx)
+            except Exception:
+                nak_lord = None
+        else:
+            nak_lord = None
+
+        # house lordship (whole-sign): houses whose signs are ruled by this graha
+        houses_ruled = []
+        lord_name = (pname or "").strip()
+        if lord_name:
+            for h, sign_idx_for_house in enumerate(house_sign_idx, start=1):
+                hs_sign_lord = None
+                if SIGN_LORDS and 0 <= sign_idx_for_house < len(SIGN_LORDS):
+                    hs_sign_lord = SIGN_LORDS[sign_idx_for_house]
+                elif sign_lord_fn:
+                    try:
+                        hs_sign_lord = sign_lord_fn(sign_idx_for_house)
+                    except Exception:
+                        hs_sign_lord = None
+                if hs_sign_lord and str(hs_sign_lord).lower() == lord_name.lower():
+                    houses_ruled.append(h)
+
+        out[pname] = {
+            "lon": lon_deg,
+            "retrograde": retro,
+            "speed": speed,
+            "sign_idx": sidx,
+            "sign": sname,
+            "nakshatra_idx": nidx,
+            "nakshatra": nname,
+            "pada": pada,
+            "house": house_by_planet.get(pname),
+            "lords": {
+                "sign": sign_lord,
+                "nakshatra": nak_lord,
+                "house_lordship": houses_ruled or None,
+            },
+        }
+
+    payload = {
+        "grahas": out,
+        "chart_id": chart_id_for(dob, tob, tz, lat, lon, ayan, hs),
+    }
+    cache_set(key, payload)
+    return jsonify(payload)
+
+
+@api.get("/varsha/details")
+def varsha_details():
+    """
+    Varshaphal subfeatures:
+      - muntha
+      - sahams
+      - mudda_dasha
+      - annual: {yogas, aspects}
+    Defaults varsha_year to request's local (tz) year + 1 when absent.
+    Tries compute_varshaphala() first; if a piece is missing, tries tolerant per-feature imports.
+    """
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, _cid = parse_query_or_id()
+    except ValueError as e:
+        return _json_error(str(e), code=400)
+
+    init_swe()
+
+    tz_h = _tz_hours(tz)
+    local_now = datetime.utcnow() + timedelta(hours=tz_h)
+    varsha_year = request.args.get("varsha_year", type=int)
+    varsha_year = varsha_year if varsha_year is not None else (local_now.year + 1)
+
+    key = f"varsha_details|{varsha_year}|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    if (hit := cache_get(key)) is not None:
+        return jsonify(hit)
+
+    try:
+        from astrology.varshaphala import compute_varshaphala
+    except Exception:
+        return _json_error("astrology varshaphala not available", code=501, type_="missing_dependency")
+
+    dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    v = None
+    try:
+        v = compute_varshaphala(dt, tz_h, lat, lon, varsha_year=int(varsha_year))
+    except Exception as e:
+        app.logger.warning("compute_varshaphala failed: %s", e)
+
+    # extract if present
+    muntha = v.get("muntha") if isinstance(v, dict) else None
+    sahams = v.get("sahams") if isinstance(v, dict) else None
+    mudda = v.get("mudda_dasha") or (v.get("mudda") if isinstance(v, dict) else None)
+    annual_yogas = (v.get("yogas") if isinstance(v, dict) else None) or None
+    annual_aspects = (v.get("aspects") if isinstance(v, dict) else None) or None
+
+    # tolerant fallbacks
+    if muntha is None:
+        fn = _imp_first([
+            ("astrology.varshaphala", "compute_muntha"),
+            ("astrology.varshaphala", "muntha"),
+        ])
+        if fn:
+            try:
+                muntha = fn(dt, tz_h, lat, lon, int(varsha_year))
+            except Exception:
+                muntha = None
+
+    if sahams is None:
+        fn = _imp_first([
+            ("astrology.varshaphala", "compute_sahams"),
+            ("astrology.varshaphala", "sahams"),
+        ])
+        if fn:
+            try:
+                sahams = fn(dt, tz_h, lat, lon, int(varsha_year))
+            except Exception:
+                sahams = None
+
+    if mudda is None:
+        fn = _imp_first([
+            ("astrology.varshaphala", "compute_mudda_dasha"),
+            ("astrology.varshaphala", "compute_tajika_dasha"),
+            ("astrology.varshaphala", "mudda_dasha"),
+        ])
+        if fn:
+            try:
+                mudda = fn(dt, tz_h, lat, lon, int(varsha_year))
+            except Exception:
+                mudda = None
+
+    if annual_yogas is None:
+        fn = _imp_first([
+            ("astrology.varshaphala", "compute_annual_yogas"),
+            ("astrology.yogas", "compute_annual_yogas"),
+        ])
+        if fn:
+            try:
+                annual_yogas = fn(dt, tz_h, lat, lon, int(varsha_year))
+            except Exception:
+                annual_yogas = None
+
+    if annual_aspects is None:
+        fn = _imp_first([
+            ("astrology.varshaphala", "compute_annual_aspects"),
+            ("astrology.aspects", "compute_annual_aspects"),
+        ])
+        if fn:
+            try:
+                annual_aspects = fn(dt, tz_h, lat, lon, int(varsha_year))
+            except Exception:
+                annual_aspects = None
+
+    payload = {
+        "varsha_year": int(varsha_year),
+        "muntha": muntha,
+        "sahams": sahams,
+        "mudda_dasha": mudda,
+        "annual": {
+            "yogas": annual_yogas,
+            "aspects": annual_aspects,
+        },
+        "chart_id": chart_id_for(dob, tob, tz, lat, lon, ayan, hs),
+    }
+    cache_set(key, payload)
+    return jsonify(payload)

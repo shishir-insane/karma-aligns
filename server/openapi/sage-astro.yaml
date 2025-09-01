@@ -1,8 +1,23 @@
 openapi: 3.0.3
-info: { title: Sage Astro API, version: 1.0.0 }
+info:
+  title: Sage Astro API
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:5000
+
 paths:
   /api/v1/health:
-    get: { summary: Health check, responses: { "200": { description: OK } } }
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
   /api/v1/compute:
     post:
       summary: Compute full kundli payload
@@ -11,15 +26,709 @@ paths:
         content:
           application/json:
             schema:
+              $ref: '#/components/schemas/ComputeRequest'
+      responses:
+        "200":
+          description: Computed chart payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/chart/id:
+    get:
+      summary: Return deterministic chart_id for inputs (and seed id→inputs mapping)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chart_id:
+                    type: string
+        "400":
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/asc:
+    get:
+      summary: Ascendant (supports chart_id or raw params)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AscResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/houses:
+    get:
+      summary: House cusps (supports chart_id or raw params)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousesResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/planets:
+    get:
+      summary: Planet longitudes (supports chart_id or raw params)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanetsResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/charts/rashi:
+    get:
+      summary: Rashi placements (supports chart_id or raw params)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RashiResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/charts/chalit:
+    get:
+      summary: Chalit placements (supports chart_id or raw params)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChalitResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/vargas:
+    get:
+      summary: Vargas maps (Dx → { asc_idx, houses })
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+        - $ref: '#/components/parameters/vargas'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VargasResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/table/planets:
+    get:
+      summary: Formatted planet table
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/shadbala:
+    get:
+      summary: Shadbala (components + total)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShadbalaResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/dasha:
+    get:
+      summary: Dasha systems (Vimshottari, Yogini, Ashtottari, Kalachakra)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashaResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "422":
+          description: Unprocessable (e.g., Moon longitude missing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/varsha:
+    get:
+      summary: Varshaphala (defaults to request's local year + 1 if varsha_year is absent)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+        - $ref: '#/components/parameters/varsha_year'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VarshaResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/acg:
+    get:
+      summary: Astrocartography lines + advice
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcgResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/symbols:
+    get:
+      summary: Rashis + sign symbols
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymbolsResponse'
+        "501":
+          $ref: '#/components/responses/MissingDependency'
+
+  /api/v1/capabilities:
+    get:
+      summary: Which optional calculations are available
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilitiesResponse'
+
+  /api/v1/grahas:
+    get:
+      summary: Normalized graha details (sign, nakṣatra+pada, house, lords)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grahas:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        lon: { type: number }
+                        retrograde: { type: boolean }
+                        speed: { type: number }
+                        sign_idx: { type: integer }
+                        sign: { type: string, nullable: true }
+                        nakshatra_idx: { type: integer }
+                        nakshatra: { type: string, nullable: true }
+                        pada: { type: integer }
+                        house: { type: integer, nullable: true }
+                        lords:
+                          type: object
+                          properties:
+                            sign: { type: string, nullable: true }
+                            nakshatra: { type: string, nullable: true }
+                            house_lordship:
+                              type: array
+                              items: { type: integer }
+                              nullable: true
+                  chart_id: { type: string }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+  /api/v1/varsha/details:
+    get:
+      summary: Varshaphal subfeatures (Muntha, Sahams, Mudda daśā, annual yogas/aspects)
+      parameters:
+        - $ref: '#/components/parameters/chart_id'
+        - $ref: '#/components/parameters/dob'
+        - $ref: '#/components/parameters/tob'
+        - $ref: '#/components/parameters/tz'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/ayanamsa'
+        - $ref: '#/components/parameters/hsys'
+        - $ref: '#/components/parameters/varsha_year'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  varsha_year: { type: integer }
+                  muntha: { type: object, nullable: true }
+                  sahams: { type: object, nullable: true }
+                  mudda_dasha: { type: object, nullable: true }
+                  annual:
+                    type: object
+                    properties:
+                      yogas: { type: object, nullable: true }
+                      aspects: { type: object, nullable: true }
+                  chart_id: { type: string }
+        "400": { $ref: '#/components/responses/BadRequest' }
+        "501": { $ref: '#/components/responses/MissingDependency' }
+
+components:
+  parameters:
+    chart_id:
+      name: chart_id
+      in: query
+      required: false
+      schema: { type: string }
+      description: If provided, server resolves stored inputs; otherwise pass raw params.
+    dob:
+      name: dob
+      in: query
+      required: false
+      schema: { type: string, format: date }
+      example: "1984-09-24"
+    tob:
+      name: tob
+      in: query
+      required: false
+      schema: { type: string, pattern: '^\\d{2}:\\d{2}$' }
+      example: "17:30"
+    tz:
+      name: tz
+      in: query
+      required: false
+      schema: { type: string }
+      example: "+05:30"
+    lat:
+      name: lat
+      in: query
+      required: false
+      schema: { type: number, minimum: -90, maximum: 90 }
+    lon:
+      name: lon
+      in: query
+      required: false
+      schema: { type: number, minimum: -180, maximum: 180 }
+    ayanamsa:
+      name: ayanamsa
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [lahiri, fagan, krishnamurti]
+      example: lahiri
+    hsys:
+      name: hsys
+      in: query
+      required: false
+      schema: { type: string }
+      example: "P"
+    vargas:
+      name: vargas
+      in: query
+      required: false
+      schema:
+        type: string
+        description: Comma-separated list of Vargas to compute (e.g., "D9,D10").
+      example: "D9,D10"
+    varsha_year:
+      name: varsha_year
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1800, maximum: 2600 }
+      description: >
+        Target Varshaphala year. If omitted, API uses the request's local year
+        (based on tz) plus 1.
+
+  responses:
+    BadRequest:
+      description: Bad input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    MissingDependency:
+      description: Required calculation module not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type: { type: string }
+            message: { type: string }
+            detail: { }
+
+    Health:
+      type: object
+      properties:
+        ok: { type: boolean }
+        service: { type: string }
+        version: { type: string }
+
+    ComputeRequest:
+      type: object
+      required: [dob, tob, lat, lon]
+      properties:
+        name: { type: string, default: "Chart" }
+        dob:  { type: string, format: date, example: "1984-09-24" }
+        tob:  { type: string, example: "17:30", pattern: '^\\d{2}:\\d{2}$' }
+        tz:   { type: string, default: "+00:00", example: "+05:30" }
+        lat:  { type: number, minimum: -90, maximum: 90 }
+        lon:  { type: number, minimum: -180, maximum: 180 }
+        varsha_year: { type: integer, nullable: true }
+        vargas:
+          type: array
+          items: { type: string }
+          example: ["D9", "D10"]
+
+    ComputeResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        name: { type: string }
+        input:
+          type: object
+          properties:
+            dob: { type: string }
+            tob: { type: string }
+            tz:  { type: string }
+            lat: { type: number }
+            lon: { type: number }
+        asc:
+          type: object
+          properties:
+            lon: { type: number }
+            idx: { type: integer }
+            sign: { type: string }
+        charts:
+          type: object
+          properties:
+            rashi: { type: array, items: { type: array, items: { type: string } } }
+            chalit: { type: array, items: { type: array, items: { type: string } } }
+            vargas:
               type: object
-              required: [dob, tob, lat, lon]
-              properties:
-                name: { type: string }
-                dob:  { type: string, example: "1984-09-24" }
-                tob:  { type: string, example: "17:30" }
-                tz:   { type: string, example: "+05:30" }
-                lat:  { type: number }
-                lon:  { type: number }
-                varsha_year: { type: integer }
-                vargas: { type: array, items: { type: string } }
-      responses: { "200": { description: Computed chart payload } }
+              additionalProperties:
+                type: object
+                properties:
+                  asc_idx: { type: integer }
+                  houses:
+                    type: array
+                    items: { type: array, items: { type: string } }
+        table: { type: object }
+        shadbala:
+          type: object
+          properties:
+            components: { type: object }
+            total: { type: number }
+        dasha:
+          type: object
+          additionalProperties: { type: object }   # per-system shapes vary
+        varsha: { type: object, nullable: true }
+        varsha_predictions: { type: object, nullable: true }
+        acg: { type: object, nullable: true }
+        panchanga: { type: object, nullable: true }
+        ashtakavarga: { type: object, nullable: true }
+        yogas: { type: object, nullable: true }
+        avasthas: { type: object, nullable: true }
+        aspects: { type: object, nullable: true }
+        transits: { type: object, nullable: true }
+        arudha: { type: object, nullable: true }
+        upagrahas: { type: object, nullable: true }
+        bhava_bala: { type: object, nullable: true }
+        kp: { type: object, nullable: true }
+        chart_id: { type: string }
+
+    AscResponse:
+      type: object
+      properties:
+        asc:
+          type: object
+          properties:
+            lon: { type: number }
+            idx: { type: integer }
+        chart_id: { type: string }
+
+    HousesResponse:
+      type: object
+      properties:
+        cusps: { type: array, items: { type: number } }
+        asc_sidereal: { type: number }
+        chart_id: { type: string }
+
+    PlanetsResponse:
+      type: object
+      properties:
+        planets:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              lon: { type: number }
+              speed: { type: number }
+              retrograde: { type: boolean }
+        chart_id: { type: string }
+
+    RashiResponse:
+      type: object
+      properties:
+        rashi:
+          type: array
+          items:
+            type: array
+            items: { type: string }
+        asc_idx: { type: integer }
+        chart_id: { type: string }
+
+    ChalitResponse:
+      type: object
+      properties:
+        chalit:
+          type: array
+          items:
+            type: array
+            items: { type: string }
+        chart_id: { type: string }
+
+    VargasResponse:
+      type: object
+      properties:
+        vargas:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              asc_idx: { type: integer }
+              houses:
+                type: array
+                items: { type: array, items: { type: string } }
+        chart_id: { type: string }
+
+    TableResponse:
+      type: object
+      properties:
+        table: { type: object }
+        chart_id: { type: string }
+
+    ShadbalaResponse:
+      type: object
+      properties:
+        shadbala:
+          type: object
+          properties:
+            components: { type: object }
+            total: { type: number }
+        chart_id: { type: string }
+
+    DashaResponse:
+      type: object
+      properties:
+        dasha:
+          type: object
+          additionalProperties: { type: object }  # system-specific
+        chart_id: { type: string }
+
+    VarshaResponse:
+      type: object
+      properties:
+        varsha: { type: object, nullable: true }
+        varsha_predictions: { type: object, nullable: true }
+        chart_id: { type: string }
+
+    AcgResponse:
+      type: object
+      properties:
+        acg:
+          type: object
+          properties:
+            lines: { type: object }
+            advice: { type: object }
+        chart_id: { type: string }
+
+    SymbolsResponse:
+      type: object
+      properties:
+        rashis: { type: array, items: { type: string } }
+        sign_symbols: { type: array, items: { type: string } }
+
+    CapabilitiesResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        features:
+          type: object
+          additionalProperties: { type: boolean }
