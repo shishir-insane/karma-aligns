@@ -606,6 +606,57 @@ paths:
         "400": { $ref: '#/components/responses/BadRequest' }
         "501": { $ref: '#/components/responses/MissingDependency' }
 
+    /api/v1/acg/cities:
+      get:
+        tags: [ACG]
+        summary: ACG hits and advice for 50 major world cities
+        parameters:
+          - $ref: '#/components/parameters/chart_id'
+          - $ref: '#/components/parameters/dob'
+          - $ref: '#/components/parameters/tob'
+          - $ref: '#/components/parameters/tz'
+          - name: limit
+            in: query
+            required: false
+            schema: { type: integer, minimum: 1, maximum: 10, default: 3 }
+            description: Top N nearest hits per city.
+          - name: max_km
+            in: query
+            required: false
+            schema: { type: number, minimum: 50, maximum: 2000, default: 400 }
+            description: Only include lines within this distance (km).
+        responses:
+          "200":
+            description: OK
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    cities:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key: { type: string }
+                          name: { type: string }
+                          country: { type: string }
+                          lat: { type: number }
+                          lon: { type: number }
+                          hits:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                planet: { type: string }
+                                angle: { type: string }
+                                distance_km: { type: number }
+                                advice: { type: string, nullable: true }
+                    chart_id: { type: string }
+          "400": { $ref: '#/components/responses/BadRequest' }
+          "501": { $ref: '#/components/responses/MissingDependency' }
+
+
 components:
   parameters:
     chart_id:

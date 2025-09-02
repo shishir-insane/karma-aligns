@@ -12,6 +12,12 @@ PLANETS = [
     ("Mars", swe.MARS),
     ("Jupiter", swe.JUPITER),
     ("Saturn", swe.SATURN),
+    # Outer planets
+    ("Uranus", swe.URANUS),
+    ("Neptune", swe.NEPTUNE),
+    ("Pluto", swe.PLUTO),
+    # Lunar nodes (mean); Ketu will be derived as opposite
+    ("Rahu", swe.MEAN_NODE),
 ]
 
 def _to_utc(dt_local: datetime, tz_hours: float) -> datetime:

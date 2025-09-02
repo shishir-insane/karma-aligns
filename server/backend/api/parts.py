@@ -15,6 +15,7 @@ Exposes (selected):
 - GET  /api/v1/dasha
 - GET  /api/v1/varsha
 - GET  /api/v1/acg
+- GET  /acg/cities
 - GET  /api/v1/symbols
 - GET  /api/v1/panchanga
 - GET  /api/v1/ashtakavarga
@@ -25,8 +26,6 @@ Exposes (selected):
 - GET  /api/v1/bhava-bala
 - GET  /api/v1/arudha
 - GET  /api/v1/kp
-
-NEW:
 - GET  /api/v1/grahas          → normalized graha details (sign, nakṣatra+pada, house, lords)
 - GET  /api/v1/varsha/details  → Varshaphal subfeatures (Muntha, Sahams, Mudda daśā, annual yogas/aspects)
 
@@ -53,6 +52,16 @@ from .common import (
 )
 
 from astrology.swe_utils import sign_index
+from math import radians, sin, cos, asin, sqrt
+from typing import Iterable, Tuple, Dict, Any, List
+
+from backend.data.cities_top import TOP_CITIES
+from flask import request, jsonify
+from datetime import datetime
+
+from . import api
+from backend.services.acg_cities import compute_acg_cities
+
 
 # ---------- tolerant import helper ----------
 def _imp_first(candidates):
@@ -975,3 +984,49 @@ def varsha_details():
     }
     cache_set(key, payload)
     return jsonify(payload)
+
+@api.get("/acg/cities")
+def acg_cities():
+    """
+    ACG hits (planet+angle) and optional relocation advice for 100 major cities.
+    Query:
+      - chart params or chart_id
+      - limit (int, default=3): top hits per city
+      - max_km (float, default=400): include hits within this distance
+      - relocation (bool, default=false): include relocation score/summary
+    """
+    try:
+        dob, tob, tz, lat, lon, ayan, hs, cid = parse_query_or_id()
+    except ValueError as e:
+        return jsonify({"error": {"type": "bad_request", "message": str(e)}}), 400
+
+    try:
+        top_k = int(request.args.get("limit", "3"))
+        max_km = float(request.args.get("max_km", "400"))
+        want_reloc = request.args.get("relocation", "false").lower() in ("1","true","yes","y")
+    except Exception:
+        top_k, max_km, want_reloc = 3, 400.0, False
+
+    init_swe()
+    cache_key = f"acg_cities|{dob}|{tob}|{tz}|{ayan}|{hs}|{top_k}|{max_km}|{int(want_reloc)}"
+    cached = cache_get(cache_key)
+    if cached is not None:
+        return jsonify(cached)
+
+    dt = datetime.fromisoformat(f"{dob}T{tob}:00")
+    tz_h = _tz_hours(tz)
+
+    cities = compute_acg_cities(
+        dt, tz_h,
+        top_k=top_k,
+        max_km=max_km,
+        relocation=want_reloc,
+    )
+
+    payload = {
+        "cities": cities,
+        "chart_id": cid or chart_id_for(dob, tob, tz, lat, lon, ayan, hs),
+    }
+    cache_set(cache_key, payload, timeout=600)
+    return jsonify(payload)
+
