@@ -39,6 +39,12 @@ export async function fetchJSON<T>(
   const qs = buildQuery(params)
   const url = API_BASE + path + qs
 
+  if (process.env.NODE_ENV !== "production") {
+    // remove after debugging
+    // eslint-disable-next-line no-console
+    console.debug("[API]", url)
+  }
+
   const headers: HeadersInit = { Accept: "application/json" }
   if (entry?.etag) headers["If-None-Match"] = entry.etag
 
@@ -77,3 +83,83 @@ export const api = {
   varshaDetails: (chart_id: string, varsha_year?: number) =>
     fetchJSON("/api/v1/varsha/details", { chart_id, varsha_year }),
 }
+
+// ========== ACG Cities ==========
+
+export type ACGCityHit = {
+  planet: string
+  angle: string
+  distance_km: number
+  advice: string | null
+}
+
+export type ACGCityRow = {
+  chart_id?: string
+  key: string
+  name: string
+  country: string
+  lat: number
+  lon: number
+  planet?: string | null
+  angle?: string | null
+  distance_km?: number | null
+  advice?: string | null
+}
+
+/**
+ * Fetch astrocartography cities from backend and flatten hits into table rows.
+ */
+export async function fetchAcgCities(params: {
+  dob?: string
+  tob?: string
+  tz?: string
+  lat?: number
+  lon?: number
+}): Promise<ACGCityRow[]> {
+  const base = await fetchJSON<{
+    chart_id?: string
+    cities: Array<{
+      key: string
+      name: string
+      country: string
+      lat: number
+      lon: number
+      hits: ACGCityHit[]
+    }>
+  }>("/api/v1/acg/cities", params as any)
+
+  const rows: ACGCityRow[] = []
+  for (const c of base.cities ?? []) {
+    if (!c.hits || c.hits.length === 0) {
+      rows.push({
+        chart_id: base.chart_id,
+        key: c.key,
+        name: c.name,
+        country: c.country,
+        lat: c.lat,
+        lon: c.lon,
+        planet: null,
+        angle: null,
+        distance_km: null,
+        advice: null,
+      })
+    } else {
+      for (const h of c.hits) {
+        rows.push({
+          chart_id: base.chart_id,
+          key: c.key,
+          name: c.name,
+          country: c.country,
+          lat: c.lat,
+          lon: c.lon,
+          planet: h.planet,
+          angle: h.angle,
+          distance_km: h.distance_km,
+          advice: h.advice,
+        })
+      }
+    }
+  }
+  return rows
+}
+

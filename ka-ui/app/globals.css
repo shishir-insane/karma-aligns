@@ -226,3 +226,29 @@ h3 { @apply text-xl font-semibold; }
 @keyframes ka-spin { to { transform: rotate(360deg) } }
 .spin-slow { animation: ka-spin 20s linear infinite; }
 
+@media (max-width: 420px) {
+  .acg-chip { padding-inline: .625rem; }
+}
+
+/* Keep the advice area height stable so nearby components don't jump */
+.advice-shell {
+  min-height: 180px; /* tweak if your tips are longer */
+}
+
+/* micro fade for content swap */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+/* app/globals.css */
+[data-state="open"] .accordion-content {
+  animation: fadeIn .18s ease;
+}
+
+/* tiny helpers for consistency */
+/* Utility helpers */
+.glass {
+  @apply bg-surface/70 backdrop-blur border border-border;
+}
+.section {
+  @apply rounded-2xl bg-surface/70 backdrop-blur border border-border;
+}
+

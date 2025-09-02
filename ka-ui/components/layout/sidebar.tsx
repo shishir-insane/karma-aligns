@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Grid, LineChart, Zap } from "lucide-react"
+import { LayoutDashboard, Grid, LineChart, Zap, LocateFixedIcon, Wind } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { color, motion } from "framer-motion"
 
@@ -11,7 +11,9 @@ const NAV = [
   { href: "/natal", label: "Natal", icon: Grid },
   { href: "/timing", label: "Timing", icon: LineChart },
   { href: "/strengths", label: "Strengths", icon: Zap },
-  { href: "/acg", label: "Astrocartography", icon: Globe2 }, 
+  { href: "/acg", label: "Astrocartography", icon: LocateFixedIcon }, 
+  { href: "/acg/cities", label: "AG Cities", icon: Wind }, 
+
 ]
 
 export default function Sidebar() {
@@ -25,7 +27,6 @@ export default function Sidebar() {
             alt="Karma Aligns"
             className="h-8 w-8 opacity-90"
             animate={{ rotate: 360 }}
-            
             transition={{ repeat: Infinity, ease: "linear", duration: 20 }}
           />
           <span className="text-lg font-semibold">Karma Aligns</span>
