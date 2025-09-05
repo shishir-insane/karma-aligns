@@ -77,7 +77,7 @@ def compute_varshaphala(
     - Muntha sign/sign-lord and their placement in the return chart
     - Datasets for existing Rāśi/Chalit renderers
     """
-
+    print(year)
     # Natal Sun longitude (sidereal)
     natal_planets = compute_planets(birth_dt_local, tz_hours, lat, lon, ayanamsa='lahiri')
     natal_sun_lon = natal_planets["Sun"]["lon"]

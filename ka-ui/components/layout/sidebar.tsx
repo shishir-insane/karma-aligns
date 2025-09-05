@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Grid, LineChart, Zap, LocateFixedIcon, Wind } from "lucide-react"
+import { LayoutDashboard, Grid, LineChart, Zap, LocateFixedIcon, Wind, Antenna } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { color, motion } from "framer-motion"
 
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/natal", label: "Natal", icon: Grid },
   { href: "/timing", label: "Timing", icon: LineChart },
   { href: "/strengths", label: "Strengths", icon: Zap },
+  { href: "/varsha", label: "Solar Chart", icon: Antenna },
   { href: "/acg", label: "Astrocartography", icon: LocateFixedIcon }, 
   { href: "/acg/cities", label: "AG Cities", icon: Wind }, 
 

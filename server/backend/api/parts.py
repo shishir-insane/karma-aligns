@@ -61,6 +61,8 @@ from datetime import datetime
 
 from . import api
 from backend.services.acg_cities import compute_acg_cities
+from astrology.predictions import generate_predictions
+
 
 
 # ---------- tolerant import helper ----------
@@ -422,6 +424,7 @@ def varsha():
     varsha_year = varsha_year if varsha_year is not None else (local_now.year + 1)
 
     key = f"varsha|{varsha_year}|{dob}|{tob}|{tz}|{lat:.6f}|{lon:.6f}|{ayan}|{hs}"
+    print(key)
     if (hit := cache_get(key)) is not None:
         return jsonify(hit)
 
@@ -432,12 +435,19 @@ def varsha():
 
     dt = datetime.fromisoformat(f"{dob}T{tob}:00")
     try:
-        v = compute_varshaphala(dt, tz_h, lat, lon, varsha_year=int(varsha_year))
+        v = compute_varshaphala(dt, tz_h, lat, lon, year=int(varsha_year))
     except Exception as e:
         app.logger.warning("varshaphala failed: %s", e)
         v = None
 
-    varsha_predictions = v.get("predictions") if isinstance(v, dict) else None
+    varsha_predictions =  generate_predictions(
+                v["planets"],
+                v["asc_idx"],
+                v["chalit_houses"],
+                vargas={},  # (Tajika doesn’t require vargas; keep empty or compute if you wish)
+                dasha_info=None,  # Typically Varṣaphala uses Tajika dashās; keep off here
+                strengths=None
+        )
     payload = {
         "varsha": v,
         "varsha_predictions": varsha_predictions,
