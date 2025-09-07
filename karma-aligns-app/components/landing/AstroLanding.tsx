@@ -18,7 +18,7 @@ type PlanetEntry = { lon: number; retrograde: boolean | null; speed: number | nu
 type PlanetsDict = Record<string, PlanetEntry>;
 type ApiResponse = { chart_id: string; planets: PlanetsDict };
 
-export default function AstroLanding({ wheelSrc = "/zodiac-wheel.png" }: { wheelSrc?: string }) {
+export default function AstroLanding({ wheelSrc = "/karma-wheel.png" }: { wheelSrc?: string }) {
   const [wheelPaused, setWheelPaused] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
