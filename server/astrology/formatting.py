@@ -37,7 +37,7 @@ def build_planet_table(planets: dict, asc_idx: int, *, include_asc: dict | None 
         lon = data['lon']
         sign = SIGN_NAMES[sign_index(lon)]
         deg = f"{lon % 30:.2f}°"
-        nak, lord, pada = nakshatra_for_lon(lon)
+        idx, nak, lord, pada = nakshatra_for_lon(lon)
         house_num = ((sign_index(lon) - asc_idx) % 12) + 1  # 1..12
 
         rows.append({
@@ -51,6 +51,7 @@ def build_planet_table(planets: dict, asc_idx: int, *, include_asc: dict | None 
             'Nakshatra Lord': lord,
             'Nakshatra Pada': pada,
             'House': house_num,
+            'Index': idx
         })
 
     return rows

@@ -190,7 +190,7 @@ def generate_predictions(
 
     moon = planets.get("Moon")
     moon_sign = _sign_name(moon["lon"]) if moon else None
-    moon_nak, moon_nak_lord, moon_pada = nakshatra_for_lon(moon["lon"]) if moon else (None, None, None)
+    idx, moon_nak, moon_nak_lord, moon_pada = nakshatra_for_lon(moon["lon"]) if moon else (None, None, None)
 
     # 1) Planet-by-house reading (Bhāva Chalit) with dignity + varga seasoning
     for pname, pdata in planets.items():

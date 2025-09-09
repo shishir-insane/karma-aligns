@@ -101,7 +101,33 @@ KCD_TABLES = {
     },
 }
 
+# --- Canonicalize rashi names to English 12-sign set ------------------------
+_CANON_RASI = {
+    "aries":"Aries", "mesha":"Aries",
+    "taurus":"Taurus", "vrishabha":"Taurus", "vrishabh":"Taurus",
+    "gemini":"Gemini", "mithuna":"Gemini",
+    "cancer":"Cancer", "karka":"Cancer", "karkata":"Cancer", "kark":"Cancer",
+    "leo":"Leo", "simha":"Leo",
+    "virgo":"Virgo", "kanya":"Virgo",
+    "libra":"Libra", "tula":"Libra", "thula":"Libra",
+    "scorpio":"Scorpio", "vrischika":"Scorpio", "vrishchika":"Scorpio",
+    "sagittarius":"Sagittarius", "dhanu":"Sagittarius", "dhanus":"Sagittarius",
+    "capricorn":"Capricorn", "makara":"Capricorn",
+    "aquarius":"Aquarius", "kumbha":"Aquarius",
+    "pisces":"Pisces", "meena":"Pisces", "mina":"Pisces",
+}
+try:
+    # prefer your canonical list if available
+    from .symbols import SIGN_NAMES  # ["Aries", ... "Pisces"]
+except Exception:
+    SIGN_NAMES = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+                  "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"]
 
+def _canon_rasi(x):
+    if isinstance(x, int):
+        return SIGN_NAMES[x % 12]
+    s = str(x).strip().lower()
+    return _CANON_RASI.get(s, s.title())  # fall back to Title-cased input
 
 def _to_utc(dt_local: datetime, tz_hours: float) -> datetime:
     dt_utc = dt_local - timedelta(hours=tz_hours)
@@ -304,28 +330,32 @@ def _kcd_end_and_restart_signs(group_key: str, deha: str, jeeva: str) -> tuple[s
     restart_sign = deha if is_savya else jeeva
     return end_sign, restart_sign
 
-def _kcd_ad_order(seq: list[str], md_sign: str, group_key: str, deha: str, jeeva: str, count: int = 8) -> list[str]:
-    """Build Antardasa (or Pratyantara) order of 'count' signs."""
-    n = len(seq)
-    midx = seq.index(md_sign)
-    end_sign, restart = _kcd_end_and_restart_signs(group_key, deha, jeeva)
-    eidx = seq.index(end_sign)
-    # walk from md_sign to end_sign (inclusive)
-    block1 = []
-    i = midx
-    while True:
-        block1.append(seq[i])
-        if seq[i] == end_sign:
-            break
-        i = (i + 1) % n
-    # then from restart onward
-    block2 = []
-    i = seq.index(restart)
-    while len(block1) + len(block2) < count:
-        block2.append(seq[i])
-        i = (i + 1) % n
-    out = (block1 + block2)[:count]
-    return out
+def _kcd_ad_order(seq, restart, gkey, deha, jeeva, count=8):
+    """
+    Build Kalachakra AD order given a base sequence `seq` (list of rashis),
+    starting from `restart`. Be tolerant to naming differences.
+    """
+    # Canonicalize both the incoming seq and the restart rasi
+    seq_canon = [_canon_rasi(x) for x in (seq or [])]
+    restart_canon = _canon_rasi(restart)
+
+    try:
+        i = seq_canon.index(restart_canon)
+    except ValueError:
+        # If the requested start rasi isn't in this 8-sign wheel,
+        # fall back gracefully: try first element; log a hint.
+        import logging
+        logging.getLogger(__name__).warning(
+            "Kalachakra: restart rasi %r not in sequence %r (canon %r); "
+            "falling back to first element.",
+            restart, seq, seq_canon
+        )
+        i = 0  # safe fallback
+
+    # rotate the ORIGINAL labels (not just canon) so downstream keeps its own formatting
+    seq_rot = list(seq[i:]) + list(seq[:i])
+    return seq_rot[:max(1, int(count) if count else 8)]
+
 
 def _kcd_frac_in_pada(moon_lon: float) -> float:
     """Elapsed fraction within current pada (0..1)."""

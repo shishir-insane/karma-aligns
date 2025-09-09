@@ -178,13 +178,40 @@ def compute():
     # Dashas (requires Moon longitude)
     moon_lon = planets.get("Moon", {}).get("lon")
     dasha = None
+    dasha = None
     if moon_lon is not None:
+        try:
+            vim = compute_vimsottari(dt_local, tz_hours, moon_lon)
+        except Exception as e:
+            vim = {"_error": str(e)}
+        try:
+            yog = compute_yogini(dt_local, tz_hours, moon_lon)
+        except Exception as e:
+            yog = {"_error": str(e)}
+        try:
+            asht = compute_ashtottari(dt_local, tz_hours, moon_lon)
+        except Exception as e:
+            asht = {"_error": str(e)}
+        try:
+            kcd = compute_kalachakra(dt_local, tz_hours, moon_lon)
+        except Exception as e:
+            # prevent 500s; surface the issue in a structured way
+            kcd = {"_error": f"kalachakra_failed: {e}"}
+
         dasha = {
-            "Vimshottari": compute_vimsottari(dt_local, tz_hours, moon_lon),
-            "Yogini":      compute_yogini   (dt_local, tz_hours, moon_lon),
-            "Ashtottari":  compute_ashtottari(dt_local, tz_hours, moon_lon),
-            "Kalachakra":  compute_kalachakra(dt_local, tz_hours, moon_lon),
+            "Vimshottari": vim,
+            "Yogini": yog,
+            "Ashtottari": asht,
+            "Kalachakra": kcd,
         }
+
+    # if moon_lon is not None:
+    #     dasha = {
+    #         "Vimshottari": compute_vimsottari(dt_local, tz_hours, moon_lon),
+    #         "Yogini":      compute_yogini   (dt_local, tz_hours, moon_lon),
+    #         "Ashtottari":  compute_ashtottari(dt_local, tz_hours, moon_lon),
+    #         "Kalachakra":  compute_kalachakra(dt_local, tz_hours, moon_lon),
+    #     }
 
     # Optional solar return (Varshaphala)
     varsha, varsha_predictions = None, None

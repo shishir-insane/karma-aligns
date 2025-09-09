@@ -57,7 +57,7 @@ def compute_panchanga(dt_local: datetime, tz_hours: float, lat: float, lon: floa
     karana = KARANA_NAMES[karana_idx]
 
     # Nakshatra
-    nidx, nname, pada, nprog = nakshatra_for_lon(moon)  # you already return (idx, name, pada, progress)
+    nidx, nname, lord, pada = nakshatra_for_lon(moon)  
 
     # Weekday in local time
     local_day = (dt_local - timedelta(hours=0)).weekday()  # dt_local is already local wall time
@@ -67,6 +67,6 @@ def compute_panchanga(dt_local: datetime, tz_hours: float, lat: float, lon: floa
         "tithi": {"idx": tithi_idx, "name": TITHI_NAMES[tithi_idx], "progress": round(tithi_progress, 4)},
         "yoga": {"idx": yoga_idx, "name": YOGA_NAMES[yoga_idx], "progress": round(yoga_progress, 4)},
         "karana": {"idx": karana_idx, "name": karana},
-        "nakshatra": {"idx": nidx, "name": nname, "pada": int(pada), "progress": round(nprog, 4)},
+        "nakshatra": {"idx": nidx, "name": nname, "pada": int(pada), "lird": lord},
         "weekday": weekday,
     }
