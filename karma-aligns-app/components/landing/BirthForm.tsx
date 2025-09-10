@@ -81,9 +81,9 @@ export default function BirthForm({
   }
 
   const samples: { label: string; v: BirthFormValues }[] = [
-    { label: "Shishir • Gorakhpur 1984", v: { name: "Shishir Kumar", date: "1984-09-24", time: "17:30", tz: "+05:30", lat: "26.7606", lon: "83.3732" } },
-    { label: "Sanghita • Silchar 1986", v: { name: "Sanghita Roy", date: "1986-03-17", time: "16:50", tz: "+05:30", lat: "24.8332", lon: "92.7789" } },
-    { label: "Samvrita • Bangalore 2015", v: { name: "Samvrita Kumar", date: "2015-08-14", time: "22:30", tz: "+05:30", lat: "12.9715", lon: "77.5945" } },
+    { label: "Sample 1 • Gorakhpur 1984", v: { name: "Sample 1", date: "1984-09-24", time: "17:30", tz: "+05:30", lat: "26.7606", lon: "83.3732" } },
+    { label: "Sample 2 • Silchar 1986", v: { name: "Sample 2", date: "1986-03-17", time: "16:50", tz: "+05:30", lat: "24.8332", lon: "92.7789" } },
+    { label: "Sample 3 • Bangalore 2015", v: { name: "Sample 3", date: "2015-08-14", time: "22:30", tz: "+05:30", lat: "12.9715", lon: "77.5945" } },
   ];
 
   async function quickRun(v: BirthFormValues) {
