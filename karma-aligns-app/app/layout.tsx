@@ -1,34 +1,28 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+export const dynamic = "force-static";
+
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Karma Aligns",
-  description: "Balance your karma, align your life.",
+  description: "Balance your karma and align your life.",
+  icons: {
+    icon: "/favicon/favicon.ico", // /public/favicon/favicon.ico
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <head>
+        {/* Google Fonts for Maharlika (headings) + Inter (body) */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Maharlika&family=Inter:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-body antialiased">{children}</body>
     </html>
   );
 }

@@ -2,16 +2,14 @@
 
 import React, { useState } from "react";
 import { saveCompute } from "@/lib/computeCache";
-import { Merriweather, Merriweather_Sans } from "next/font/google";
-const merriweather = Merriweather({ subsets: ["latin"], weight: ["700"], display: "swap" });
-const merriweatherSans = Merriweather_Sans({ subsets: ["latin"], weight: ["400", "700"], display: "swap" });
+import { Sparkles } from "lucide-react";
 
 export type BirthFormValues = {
   name?: string;
-  date: string;   // YYYY-MM-DD
-  time: string;   // HH:mm
-  tz: string;     // e.g. +05:30
-  lat: string;    // string for inputs, parsed later
+  date: string;
+  time: string;
+  tz: string;
+  lat: string;
   lon: string;
 };
 
@@ -39,15 +37,12 @@ export default function BirthForm({
     setValues((s) => ({ ...s, [k]: v }));
   }
 
-  // Build params for /compute + cache
   function toParams(v: BirthFormValues) {
     const tzRaw = decodeURIComponent((v.tz || "").trim().replace(/\s+/g, ""));
     const tz = tzRaw ? (/^[+-]/.test(tzRaw) ? tzRaw : `+${tzRaw}`) : "";
     return { dob: v.date?.trim(), tob: v.time?.trim(), tz, lat: v.lat?.trim(), lon: v.lon?.trim() };
   }
-  function valid(v: ReturnType<typeof toParams>) {
-    return v.dob && v.tob && v.tz && v.lat && v.lon;
-  }
+  const valid = (p: ReturnType<typeof toParams>) => p.dob && p.tob && p.tz && p.lat && p.lon;
 
   async function computeAndCache(v: BirthFormValues) {
     const params = toParams(v);
@@ -57,20 +52,15 @@ export default function BirthForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dob: params.dob,
-          tob: params.tob,
-          tz: params.tz,
-          lat: parseFloat(params.lat!),
-          lon: parseFloat(params.lon!),
+          dob: params.dob, tob: params.tob, tz: params.tz,
+          lat: parseFloat(params.lat!), lon: parseFloat(params.lon!),
         }),
       });
       if (res.ok) {
         const json = await res.json();
-        saveCompute(params, json); // so /results hydrates instantly
+        saveCompute(params, json);
       }
-    } catch {
-      // ignore; /results can fall back to network
-    }
+    } catch {}
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -90,20 +80,10 @@ export default function BirthForm({
     }
   }
 
-  // ---------- Samples ----------
   const samples: { label: string; v: BirthFormValues }[] = [
-    {
-      label: "Sample • India (1984)",
-      v: { name: "Sample India", date: "1984-09-24", time: "17:30", tz: "+05:30", lat: "26.7606", lon: "83.3732" },
-    },
-    {
-      label: "Sample • NYC Winter",
-      v: { name: "Sample NYC", date: "1990-01-15", time: "08:00", tz: "-05:00", lat: "40.7128", lon: "-74.0060" },
-    },
-    {
-      label: "Sample • Sydney Spring",
-      v: { name: "Sample Sydney", date: "2000-10-10", time: "14:15", tz: "+10:00", lat: "-33.8688", lon: "151.2093" },
-    },
+    { label: "Shishir • Gorakhpur 1984", v: { name: "Shishir Kumar", date: "1984-09-24", time: "17:30", tz: "+05:30", lat: "26.7606", lon: "83.3732" } },
+    { label: "Sanghita • Silchar 1986", v: { name: "Sanghita Roy", date: "1986-03-17", time: "16:50", tz: "+05:30", lat: "24.8332", lon: "92.7789" } },
+    { label: "Samvrita • Bangalore 2015", v: { name: "Samvrita Kumar", date: "2015-08-14", time: "22:30", tz: "+05:30", lat: "12.9715", lon: "77.5945" } },
   ];
 
   async function quickRun(v: BirthFormValues) {
@@ -118,20 +98,38 @@ export default function BirthForm({
     }
   }
 
-  // ---------- UI ----------
   return (
     <div className={className}>
-      <div className="rounded-2xl border border-white/10 bg-white/5/50 backdrop-blur-lg p-4 sm:p-6">
-        <div className="mb-4">
-          <div className={`${merriweather.className} text-lg text-sky-200`}>Birth details</div>
-          <p className={`${merriweatherSans.className} mt-1 text-sm text-slate-300/90`}>
-            Enter your data or pick a sample to try the experience instantly.
-          </p>
+      <div className="rounded-2xl bg-white/5/50 p-4 backdrop-blur-lg sm:p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
+        {/* Heading + sample presets (top) */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="font-heading text-lg text-sky-200">Birth details</div>
+            <p className="mt-1 text-sm text-slate-300/90">Enter your data or try a sample.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {samples.map((s) => (
+              <button
+                key={s.label}
+                type="button"
+                disabled={disabled}
+                onClick={() => quickRun(s.v)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-sky-300/30 bg-sky-300/10 px-3 py-1.5 text-xs text-sky-100 hover:bg-sky-300/20 disabled:opacity-60"
+                title="Prefill & compute, then open results"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {/* Name (optional) */}
-          <div className="col-span-1 sm:col-span-2">
+        {/* EXTRA SPACE between samples and form */}
+        <div className="h-2" />
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2 font-body">
+          <div>
             <label className="mb-1 block text-xs text-slate-300">Full name (optional)</label>
             <input
               name="name"
@@ -142,7 +140,6 @@ export default function BirthForm({
             />
           </div>
 
-          {/* Date */}
           <div>
             <label className="mb-1 block text-xs text-slate-300">Date of birth</label>
             <input
@@ -155,7 +152,6 @@ export default function BirthForm({
             />
           </div>
 
-          {/* Time */}
           <div>
             <label className="mb-1 block text-xs text-slate-300">Time of birth</label>
             <input
@@ -168,12 +164,10 @@ export default function BirthForm({
             />
           </div>
 
-          {/* Timezone */}
           <div>
             <label className="mb-1 block text-xs text-slate-300">Timezone (±HH:MM)</label>
             <input
               name="tz"
-              inputMode="text"
               placeholder="+05:30"
               required
               value={values.tz}
@@ -183,7 +177,6 @@ export default function BirthForm({
             <p className="mt-1 text-[11px] text-slate-400">Example: +05:30, -08:00</p>
           </div>
 
-          {/* Latitude */}
           <div>
             <label className="mb-1 block text-xs text-slate-300">Latitude</label>
             <input
@@ -197,7 +190,6 @@ export default function BirthForm({
             />
           </div>
 
-          {/* Longitude */}
           <div>
             <label className="mb-1 block text-xs text-slate-300">Longitude</label>
             <input
@@ -211,31 +203,25 @@ export default function BirthForm({
             />
           </div>
 
-          {/* Submit */}
-          <div className="col-span-1 sm:col-span-2 mt-2 flex items-center gap-3">
+          {/* CTAs */}
+          <div className="col-span-1 mt-2 flex flex-wrap items-center gap-3 sm:col-span-2">
             <button
               type="submit"
               disabled={disabled}
-              className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm hover:bg-white/20 disabled:opacity-60"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-400 to-fuchsia-400 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-lg shadow-fuchsia-500/20 hover:brightness-110 disabled:opacity-60"
             >
-              {disabled ? "Computing…" : "Generate chart"}
+              <span>{disabled ? "Computing…" : "Generate chart"}</span>
+              <span className="transition-transform group-hover:translate-x-0.5">↗</span>
             </button>
 
-            {/* Samples */}
-            <div className="ml-2 flex flex-wrap items-center gap-2">
-              {samples.map((s) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => quickRun(s.v)}
-                  className="rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-xs text-sky-100 hover:bg-sky-300/20 disabled:opacity-60"
-                  title="Prefill & compute, then open results"
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => setValues({ name: "", date: "", time: "", tz: "+05:30", lat: "", lon: "" })}
+              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-slate-100 hover:bg-white/10 disabled:opacity-60"
+            >
+              Clear
+            </button>
           </div>
         </form>
       </div>
