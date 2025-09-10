@@ -9,8 +9,10 @@ import AmbientBodies from './AmbientBodies';
 import BirthForm, { BirthFormValues } from './BirthForm';
 import Image from 'next/image';
 import Moon from './Moon';
-import PlanetOverlay from './PlanetOverlay';
-import ConstellationOverlay from './ConstellationOverlay';
+
+// Removed unnecessary imports
+// import PlanetOverlay from './PlanetOverlay';
+// import ConstellationOverlay from './ConstellationOverlay';
 
 export default function AstroLanding({ wheelSrc='/karma-wheel.png' }: { wheelSrc?: string }) {
   const [submitting, setSubmitting] = useState(false);
@@ -18,7 +20,6 @@ export default function AstroLanding({ wheelSrc='/karma-wheel.png' }: { wheelSrc
   async function handleSubmit(values: BirthFormValues) {
     setSubmitting(true);
     try {
-      // navigate to results with query params (keeps SSR-safe)
       const params = new URLSearchParams({
         dob: values.date, tob: values.time, tz: values.tz, lat: values.lat, lon: values.lon
       }).toString();
@@ -38,18 +39,25 @@ export default function AstroLanding({ wheelSrc='/karma-wheel.png' }: { wheelSrc
 
       <AmbientBodies />
       <Moon />
-      <PlanetOverlay />
-      <ConstellationOverlay />
+      {/* These components are no longer needed as their logic is in Starfield.tsx */}
+      {/* <PlanetOverlay /> */}
+      {/* <ConstellationOverlay /> */}
 
       <main className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 md:grid-cols-2">
         <MotionFade>
           <div className="space-y-6">
             <div className="space-y-2">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
+                <span className="h-2 w-2 rounded-full bg-fuchsia-300/80" /> Enter your birth details
+              </p>
               <h1 className="font-heading text-5xl leading-tight tracking-tight text-white md:text-6xl">
-                Balance your Karma
+                Balance your karma
                 <br />
-                <span className="text-white/80">Align your Life</span>
+                <span className="text-white/80">Align your life</span>
               </h1>
+              <p className="max-w-prose text-white/70">
+                Submit your birth details to begin.
+              </p>
             </div>
 
             <Card className="p-1">
@@ -68,7 +76,6 @@ export default function AstroLanding({ wheelSrc='/karma-wheel.png' }: { wheelSrc
               className="rounded-full opacity-90 spin-slow"
               sizes="(min-width: 768px) 480px, 70vw"
             />
-            {/* subtle animated highlight dot */}
             <div className="absolute left-[68%] top-[44%] h-3 w-3 animate-pulse rounded-full bg-amber-300/90 shadow-[0_0_40px_8px_rgba(251,191,36,.25)]" />
           </div>
         </MotionFade>
