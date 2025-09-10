@@ -6,14 +6,14 @@ import type { Placement } from "./ResultsCards";
 export default function ResultsTable({ rows }: { rows: Placement[] }) {
   if (!rows || rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-slate-500 backdrop-blur">
+      <div className="ka-card p-5 text-sm text-slate-500 backdrop-blur">
         No placement rows to display.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur">
+    <div className="overflow-hidden ka-card">
       <table className="w-full text-sm">
         <thead className="bg-white/5 text-sky-200/90">
           <tr>

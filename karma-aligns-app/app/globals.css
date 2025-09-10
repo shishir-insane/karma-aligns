@@ -1,35 +1,601 @@
+
 @import "tailwindcss";
 
+/* Design tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --font-heading: "Maharlika", serif;
-  --font-body: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans";
+  color-scheme: dark;
+  --bg: #0b0c14;
+  --panel:  rgba(255,255,255,0.04);
+  --panel-border: rgba(255,255,255,0.10);
+  --muted: #a2a6b3;
+  --heading: "Maharlika", serif;
+  --body: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans";
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Global base */
+html, body { height: 100%; }
+body {
+  background: radial-gradient(1200px 800px at 20% -10%, #14162a 0%, var(--bg) 60%) fixed;
+  color: #e8e8ef;
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.font-heading { font-family: var(--heading); }
+.font-body { font-family: var(--body); }
+
+/* Glass card */
+.ka-card {
+  @apply rounded-2xl border shadow-[0_0_0_1px] backdrop-blur;
+  background: var(--panel);
+  border-color: var(--panel-border);
+}
+
+/* Focus ring */
+.focus-ring { @apply outline-none ring-2 ring-white/20 ring-offset-0; }
+
+/* Starfield base dots (lightweight, no canvas) */
+.starfield {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.7), transparent 40%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,.6), transparent 40%),
+    radial-gradient(1px 1px at 60% 80%, rgba(255,255,255,.5), transparent 40%),
+    radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.4), transparent 40%);
+  background-repeat: repeat;
+  background-size: 800px 600px;
+}
+
+/* Utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+/* === Animated starfield layers (CSS-only, GPU-friendly) === */
+@keyframes star-drift {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: -800px 0, 800px 0, 0 -600px, 0 600px; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+@keyframes float-slow {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+.starfield,
+.starfield-layer {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.7), transparent 40%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,.6), transparent 40%),
+    radial-gradient(1px 1px at 60% 80%, rgba(255,255,255,.5), transparent 40%),
+    radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.4), transparent 40%);
+  background-repeat: repeat;
+  background-size: 800px 600px;
+  animation: star-drift 120s linear infinite;
+  will-change: background-position;
+}
+
+.starfield-layer.l2 { animation-duration: 180s; opacity: .7; }
+.starfield-layer.l3 { animation-duration: 240s; opacity: .5; }
+
+.star-twinkle { animation: twinkle 3.2s ease-in-out infinite; }
+.star-twinkle.d1 { animation-delay: .5s; }
+.star-twinkle.d2 { animation-delay: 1.2s; }
+.star-twinkle.d3 { animation-delay: 1.8s; }
+
+.constellation-float { animation: float-slow 12s ease-in-out infinite; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .starfield, .starfield-layer { animation: none; }
+  .star-twinkle { animation: none; }
+  .constellation-float { animation: none; }
+}
+
+
+/* === Sky animations (twinkle, shooting stars, constellation lines, moon phase) === */
+@keyframes star-drift {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: -800px 0, 800px 0, 0 -600px, 0 600px; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+@keyframes float-slow {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes line-glow {
+  0%, 100% { stroke-opacity: .18; }
+  50%      { stroke-opacity: .34; }
+}
+
+@keyframes shoot {
+  0%   { transform: translate3d(0,0,0) rotate(15deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translate3d(-1200px, 600px, 0) rotate(15deg); opacity: 0; }
+}
+
+.shooting-star {
+  position: absolute;
+  width: 140px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(255,255,255,0));
+  border-radius: 2px;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
+  transform: rotate(15deg);
+  animation: shoot 3.6s linear infinite;
+  will-change: transform, opacity;
+}
+
+.starfield,
+.starfield-layer {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.7), transparent 40%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,.6), transparent 40%),
+    radial-gradient(1px 1px at 60% 80%, rgba(255,255,255,.5), transparent 40%),
+    radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.4), transparent 40%);
+  background-repeat: repeat;
+  background-size: 800px 600px;
+  animation: star-drift 120s linear infinite;
+  will-change: background-position;
+}
+
+.starfield-layer.l2 { animation-duration: 180s; opacity: .7; }
+.starfield-layer.l3 { animation-duration: 240s; opacity: .5; }
+
+.star-twinkle { animation: twinkle 3.2s ease-in-out infinite; }
+.star-twinkle.d1 { animation-delay: .5s; }
+.star-twinkle.d2 { animation-delay: 1.2s; }
+.star-twinkle.d3 { animation-delay: 1.8s; }
+
+.constellation-float { animation: float-slow 12s ease-in-out infinite; }
+
+/* Moon glow + phase */
+.moon {
+  position: absolute;
+  right: 4rem;
+  top: 2.5rem;
+  width: 84px;
+  height: 84px;
+  border-radius: 9999px;
+  background:
+    radial-gradient(closest-side, #fff 0%, #f7f7ff 60%, rgba(255,255,255,0.85) 100%);
+  box-shadow:
+    0 0 24px 6px rgba(255,255,255,0.25),
+    0 0 80px 24px rgba(180,200,255,0.12);
+  overflow: hidden;
+}
+
+.moon::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(closest-side, rgba(0,0,0,0.95), rgba(0,0,0,0.85));
+  border-radius: 50%;
+  width: 84px;
+  height: 84px;
+  transform: translateX(var(--phase-x, 24px));
+  filter: blur(0.3px);
+  transition: transform 0.2s linear;
+  animation: moon-phase 56s ease-in-out infinite alternate;
+}
+
+@keyframes moon-phase {
+  0%   { --phase-x: -42px; }  /* new */
+  25%  { --phase-x: -12px; }  /* waxing crescent */
+  50%  { --phase-x: 24px; }   /* full */
+  75%  { --phase-x: 54px; }   /* waning gibbous */
+  100% { --phase-x: 84px; }   /* new */
+}
+
+/* Reduced motion: keep visual but static */
+@media (prefers-reduced-motion: reduce) {
+  .starfield, .starfield-layer { animation: none; }
+  .star-twinkle { animation: none; }
+  .constellation-float { animation: none; }
+  .shooting-star { animation: none; opacity: .6; }
+  .moon::before { animation: none; }
+}
+
+
+/* --- Starfield density upgrade --- */
+.starfield,
+.starfield-layer {
+  background-image:
+    radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,.75), transparent 42%),
+    radial-gradient(1px 1px at 35% 15%, rgba(255,255,255,.65), transparent 42%),
+    radial-gradient(1px 1px at 55% 35%, rgba(255,255,255,.55), transparent 42%),
+    radial-gradient(1px 1px at 75% 55%, rgba(255,255,255,.70), transparent 42%),
+    radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,.60), transparent 42%),
+    radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.50), transparent 42%);
+  background-repeat: repeat;
+  background-size: 700px 520px;
+  animation: star-drift 140s linear infinite;
+  will-change: background-position;
+}
+.starfield-layer.l2 { animation-duration: 200s; opacity: .8; background-size: 900px 700px; }
+.starfield-layer.l3 { animation-duration: 260s; opacity: .55; background-size: 1100px 900px; }
+
+
+/* --- Wheel slow spin --- */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow {
+  animation: spin-slow 120s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+
+/* --- Shooting stars upgrade --- */
+@keyframes shoot {
+  0%   { transform: translate3d(0,0,0) rotate(15deg); opacity: 0; }
+  8%   { opacity: 1; }
+  100% { transform: translate3d(-1400px, 700px, 0) rotate(15deg); opacity: 0; }
+}
+.shooting-star {
+  position: absolute;
+  height: 2px;
+  width: 160px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0));
+  border-radius: 2px;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.9));
+  transform: rotate(15deg);
+  animation-name: shoot;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+.shooting-star::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: white;
+  box-shadow: 0 0 10px 2px rgba(255,255,255,0.8);
+}
+
+
+/* --- Constellation path traveling glow --- */
+@keyframes dashflow {
+  to { stroke-dashoffset: -1000; }
+}
+.path-travel {
+  stroke: white;
+  stroke-opacity: .22;
+  stroke-width: 1;
+  stroke-dasharray: 8 10;
+  animation: dashflow 12s linear infinite;
+}
+
+
+/* --- Softer moon --- */
+.moon {
+  right: 3.5rem;
+  top: 2rem;
+  width: 72px;
+  height: 72px;
+  box-shadow:
+    0 0 18px 4px rgba(255,255,255,0.22),
+    0 0 60px 18px rgba(180,200,255,0.10);
+}
+.moon::before {
+  animation: moon-phase 120s ease-in-out infinite alternate;
+  transform: translateX(var(--phase-x, 18px));
+}
+
+
+/* === Milky Way band (soft nebulae) === */
+.milkyway {
+  position: absolute;
+  inset: -20% -10%;
+  pointer-events: none;
+  transform: rotate(-18deg);
+  background-image:
+    radial-gradient(220px 100px at 20% 40%, rgba(255,255,255,0.08), transparent 60%),
+    radial-gradient(180px 90px at 30% 45%, rgba(255,255,255,0.06), transparent 60%),
+    radial-gradient(260px 120px at 45% 50%, rgba(255,255,255,0.09), transparent 60%),
+    radial-gradient(220px 110px at 60% 56%, rgba(255,255,255,0.08), transparent 60%),
+    radial-gradient(200px 100px at 72% 60%, rgba(255,255,255,0.06), transparent 60%),
+    radial-gradient(260px 120px at 84% 64%, rgba(255,255,255,0.07), transparent 60%);
+  filter: blur(6px) saturate(120%);
+  opacity: .55;
+  animation: milky-drift 160s linear infinite alternate;
+}
+@keyframes milky-drift {
+  0%   { transform: rotate(-18deg) translateY(0px); }
+  100% { transform: rotate(-18deg) translateY(20px); }
+}
+
+/* === Shooting stars: bright head + diminishing tail === */
+@keyframes shoot-arc {
+  0%   { transform: translate3d(0,0,0) rotate(18deg); opacity: 0; }
+  7%   { opacity: 1; }
+  100% { transform: translate3d(-1500px, 720px, 0) rotate(18deg); opacity: 0; }
+}
+.shooting-star {
+  position: absolute;
+  height: 2px;
+  width: 0; /* tail grows */
+  background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.0) 100%);
+  border-radius: 2px;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.85));
+  transform: rotate(18deg);
+  animation-name: shoot-arc;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+.shooting-star::before {
+  /* bright head */
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: white;
+  box-shadow:
+    0 0 8px 2px rgba(255,255,255,0.9),
+    0 0 22px 6px rgba(255,255,255,0.45);
+}
+@keyframes tail-grow {
+  0%   { width: 0; }
+  10%  { width: 40px; }
+  30%  { width: 160px; }
+  60%  { width: 140px; }
+  100% { width: 0; }
+}
+.shooting-star {
+  animation-duration: var(--dur, 3.6s);
+}
+.shooting-star,
+.shooting-star::before {
+  animation-delay: var(--delay, 0s);
+}
+.shooting-star { animation-name: shoot-arc, tail-grow; animation-duration: var(--dur, 3.6s), var(--dur, 3.6s); animation-fill-mode: both; }
+
+/* === Constellation line traveling + soft glow === */
+.path-travel {
+  stroke: white;
+  stroke-opacity: .22;
+  stroke-width: 1;
+  stroke-dasharray: 10 12;
+  animation: dashflow 10s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.15));
+}
+@keyframes dashflow {
+  to { stroke-dashoffset: -1000; }
+}
+
+/* === Softer translucent moon phases === */
+.moon {
+  right: 3.2rem;
+  top: 1.8rem;
+  width: 70px;
+  height: 70px;
+  border-radius: 9999px;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,1) 0%, rgba(248,248,255,0.95) 60%, rgba(255,255,255,0.80) 100%);
+  box-shadow:
+    0 0 14px 4px rgba(255,255,255,0.22),
+    0 0 40px 12px rgba(180,200,255,0.10);
+  overflow: hidden;
+}
+.moon::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  /* translucent shadow so background stars remain visible */
+  background: radial-gradient(closest-side, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+  transform: translateX(var(--phase-x, 16px));
+  animation: moon-phase 140s ease-in-out infinite alternate;
+}
+@keyframes moon-phase {
+  0%   { --phase-x: -38px; } /* new */
+  25%  { --phase-x: -10px; } /* waxing crescent */
+  50%  { --phase-x: 18px; }  /* full */
+  75%  { --phase-x: 46px; }  /* waning gibbous */
+  100% { --phase-x: 76px; }  /* new */
+}
+@media (prefers-reduced-motion: reduce) {
+  .milkyway { animation: none; }
+  .shooting-star { animation: none; opacity: .6; width: 120px; }
+  .moon::before { animation: none; }
+}
+
+
+/* === Shooting Star v2: shimmering trail, linear/curved path, smooth fade === */
+@keyframes shoot-linear {
+  0%   { transform: translate3d(0,0,0) rotate(var(--angle, 18deg)); opacity: 0; filter: brightness(1); }
+  10%  { opacity: 1; filter: brightness(1.1); }
+  100% { transform: translate3d(var(--dx,-1500px), var(--dy,700px), 0) rotate(var(--angle, 18deg)); opacity: 0; filter: brightness(1); }
+}
+
+.shooting-star2 {
+  position: absolute;
+  pointer-events: none;
+  height: 2px;
+  width: 180px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.0) 100%);
+  border-radius: 2px;
+  transform: rotate(var(--angle, 18deg));
+  animation: shoot-linear var(--dur,3.8s) linear both;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity, filter;
+  mix-blend-mode: screen;
+}
+.shooting-star2::before {
+  /* bright head */
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff 0%, #fff 60%, rgba(255,255,255,0.4) 100%);
+  box-shadow:
+    0 0 10px 2px rgba(255,255,255,0.9),
+    0 0 28px 8px rgba(255,255,255,0.35);
+}
+
+/* optional sparkle along trail */
+@keyframes shimmer {
+  from { mask-position: 0 0; }
+  to   { mask-position: 200px 0; }
+}
+.shooting-star2 {
+  -webkit-mask-image: linear-gradient(90deg, #000 20%, rgba(0,0,0,0.1) 100%);
+  mask-image: linear-gradient(90deg, #000 20%, rgba(0,0,0,0.1) 100%);
+  -webkit-mask-size: 200px 100%;
+  mask-size: 200px 100%;
+  animation-name: shoot-linear, shimmer;
+  animation-duration: var(--dur,3.8s), 1.2s;
+  animation-iteration-count: 1, infinite;
+  animation-timing-function: linear, linear;
+}
+
+/* Curved path via CSS Motion Path (progressive enhancement) */
+@keyframes shoot-curved {
+  0%   { offset-distance: 0%; opacity: 0; }
+  10%  { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+@supports (offset-path: path("M0,0 L1,1")) {
+  .shooting-star2.curved {
+    offset-path: path("M 0 0 C -200 120, -600 300, -1200 600");
+    offset-anchor: right center;
+    animation: shoot-curved var(--dur,3.8s) linear both;
+    animation-delay: var(--delay, 0s);
+    transform: rotate(18deg); /* visual lean */
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Twinkling background stars already present via .starfield */ 
+
+/* Keep all your existing background star and constellation styles as they were in the last update.
+   The shooting star related CSS can be removed.
+*/
+
+/* Star Twinkle Animation */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); } /* Brighter base opacity */
+  50% { opacity: 0.5; transform: scale(1.1); } /* More prominent shimmer */
 }
 
-.font-heading { font-family: var(--font-heading); }
-.font-body    { font-family: var(--font-body); }
+/* Delay modifiers for twinkling stars */
+.star-twinkle.d0-5 { animation-delay: 0.5s; }
+.star-twinkle.d1 { animation-delay: 1s; }
+.star-twinkle.d1-5 { animation-delay: 1.5s; }
+.star-twinkle.d2 { animation-delay: 2s; }
+.star-twinkle.d2-5 { animation-delay: 2.5s; }
+.star-twinkle.d3 { animation-delay: 3s; }
 
-/* optional small niceties */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* Starfield layers - adjust background images for more density and brightness */
+.starfield-layer {
+  background-size: 2000px 2000px; /* Adjust as needed for density */
+  background-repeat: repeat;
+  animation: starfield-pan 300s linear infinite; /* Example pan animation */
+  opacity: 0.7; /* Base opacity for all layers */
+}
+
+.starfield-layer.l1 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='0.5' fill='white'/%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  animation-duration: 400s;
+  opacity: 0.8; /* Brighter layer */
+}
+
+.starfield-layer.l2 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Ccircle cx='75' cy='75' r='0.7' fill='white'/%3E%3C/svg%3E");
+  background-size: 150px 150px;
+  animation-duration: 350s;
+  opacity: 0.9; /* Even brighter layer */
+}
+
+.starfield-layer.l3 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='100' cy='100' r='1' fill='white'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  animation-duration: 300s;
+  opacity: 1; /* Brightest layer */
+}
+
+.starfield-layer.l4 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Ccircle cx='125' cy='125' r='0.8' fill='white'/%3E%3C/svg%3E");
+  background-size: 250px 250px;
+  animation-duration: 250s;
+  opacity: 0.8;
+}
+
+.starfield-layer.l5 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Ccircle cx='150' cy='150' r='0.6' fill='white'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  animation-duration: 200s;
+  opacity: 0.7;
+}
+
+@keyframes starfield-pan {
+  from { background-position: 0 0; }
+  to { background-position: -2000px -2000px; } /* Pan diagonal to give more movement */
+}
+
+
+/* Moon Subtle Animation */
+@keyframes animate-moon-subtle {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.9; }
+  50% { transform: scale(1.03) translate(3px, 3px); opacity: 1; } /* Slightly more prominent */
+}
+
+.moon {
+  /* Ensure your existing moon styles are here and visible */
+  position: absolute; /* Example */
+  width: 80px; /* Example */
+  height: 80px; /* Example */
+  background-color: #f0f0f0; /* Example moon color */
+  border-radius: 50%; /* Example */
+  top: 10%; /* Example position */
+  left: 80%; /* Example position */
+  box-shadow: 0 0 30px 5px rgba(255, 255, 255, 0.4); /* Add a subtle glow */
+  animation: animate-moon-subtle 15s ease-in-out infinite alternate;
+}
+
+/* Shooting Stars - THIS CSS CAN BE REMOVED, as Canvas now draws them */
+
+
+/* Constellations - ensure these have enough contrast */
+.constellation-float {
+  /* existing styles */
+}
+
+.constellation-float circle {
+  fill: white; /* Ensure stars are solid white */
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.6); /* Add glow to constellation stars */
+}
+
+.constellation-float path {
+  stroke: rgba(255, 255, 255, 0.9); /* Brighter lines */
+  stroke-width: 1.8px; /* Thicker lines */
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); /* Add subtle glow to lines */
+}
+
+/* Planet Orbit Animations (as before) */
+/* ... (keep your existing planet styles and keyframes) ... */

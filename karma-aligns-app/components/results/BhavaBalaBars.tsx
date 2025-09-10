@@ -9,7 +9,7 @@ export default function BhavaBalaBars({ items }: { items: BhavaItem[] }) {
   const max = Math.max(...items.map(i => Math.max(i.benefic, i.malefic))), range = max || 1;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4">
+    <div className="ka-card p-4">
       <div className="grid grid-cols-1 gap-3">
         {items.map((i) => (
           <div key={i.house}>

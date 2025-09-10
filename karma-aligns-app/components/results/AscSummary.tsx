@@ -20,7 +20,7 @@ export default function AscSummary({
 
   return (
     <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Ascendant</div>
         <div className="text-lg text-sky-200">
           {label}
@@ -33,7 +33,7 @@ export default function AscSummary({
         )}
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">House 1 cusp</div>
         <div className="text-sm text-slate-200">
           {Array.isArray(cusps) && cusps[0] != null ? (
@@ -44,7 +44,7 @@ export default function AscSummary({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Cusps summary</div>
         <div className="text-sm text-slate-300">
           {Array.isArray(cusps) && cusps.length === 12 ? "12 houses computed" : "Unavailable"}

@@ -36,7 +36,7 @@ export default function VargasGrids({ vargas }: { vargas: VargasData }) {
   if (!keys.length) return null;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4">
+    <div className="ka-card p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
         {keys.map((k) => (
           <button key={k} onClick={() => setTab(k)}

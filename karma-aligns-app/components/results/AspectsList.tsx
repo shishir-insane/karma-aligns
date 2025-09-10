@@ -21,7 +21,7 @@ export default function AspectsList({ aspects }: { aspects: AspectEdge[] }) {
   }, [aspects]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5">
+    <section className="ka-card p-5">
       <div className="mb-3 flex items-center gap-2">
         <div className="text-xs text-slate-400">Aspects</div>
         <div className="ml-auto flex items-center gap-2 text-xs">

@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Merriweather_Sans } from "next/font/google";
-const merriweatherSans = Merriweather_Sans({ subsets: ["latin"], weight: ["400","700"], display: "swap" });
 
 export type Placement = {
   planet: string;
@@ -52,7 +50,7 @@ export default function ResultsCards({
   return (
     <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       {/* Snapshot */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Chart snapshot</div>
         <div className="text-sm text-slate-200">
           <div><span className="text-slate-400">Chart ID:</span> {chartId ? chartId.slice(0,16) + "…" : "—"}</div>
@@ -68,7 +66,7 @@ export default function ResultsCards({
       </div>
 
       {/* Luminaries */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Luminaries</div>
         <ul className="space-y-2 text-sm text-slate-200">
           <li>
@@ -91,7 +89,7 @@ export default function ResultsCards({
       </div>
 
       {/* Sign concentration */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Sign concentration (top)</div>
         {bySign.length === 0 ? (
           <div className="text-slate-500 text-sm">No sign data.</div>
@@ -111,7 +109,7 @@ export default function ResultsCards({
       </div>
 
       {/* House concentration */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">House concentration (top)</div>
         {byHouse.length === 0 ? (
           <div className="text-slate-500 text-sm">No house data.</div>
@@ -131,7 +129,7 @@ export default function ResultsCards({
       </div>
 
       {/* Retrograde bodies */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Retrograde</div>
         <div className="text-sm text-slate-200">
           {retrogrades.length === 0 ? (
@@ -150,7 +148,7 @@ export default function ResultsCards({
       </div>
 
       {/* Nakshatra highlights */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+      <div className="ka-card p-5 backdrop-blur">
         <div className="text-xs text-slate-400 mb-2">Nakshatra highlights</div>
         {topNakshatras.length === 0 ? (
           <div className="text-slate-500 text-sm">No nakshatra data.</div>

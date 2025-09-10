@@ -13,7 +13,7 @@ export default function ShadbalaBars({ items }: { items: ShadbalaItem[] }) {
   const max = Math.max(...items.map(i => i.total || 0), 1);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4">
+    <div className="ka-card p-4">
       <div className="space-y-3">
         {items.map((i) => (
           <div key={i.planet}>

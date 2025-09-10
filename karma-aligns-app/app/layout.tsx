@@ -1,3 +1,4 @@
+
 export const dynamic = "force-static";
 
 import "./globals.css";
@@ -6,9 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Karma Aligns",
   description: "Balance your karma and align your life.",
-  icons: {
-    icon: "/favicon/favicon.ico", // /public/favicon/favicon.ico
-  },
+  icons: { icon: "/favicon/favicon.ico" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">{children}</body>
+      <body className="min-h-dvh font-body antialiased">
+        {children}
+      </body>
     </html>
   );
 }

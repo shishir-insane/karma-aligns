@@ -15,7 +15,7 @@ export default function RashiChalit({
   const [tab, setTab] = useState<"rashi" | "chalit">("rashi");
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5">
+    <section className="ka-card p-5">
       <div className="mb-4 flex items-center gap-2">
         <button
           className={`rounded-full px-3 py-1 text-sm border ${tab==="rashi" ? "bg-white/10 border-white/10" : "bg-white/5 border-transparent"}`}

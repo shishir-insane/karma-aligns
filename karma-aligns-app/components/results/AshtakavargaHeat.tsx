@@ -16,14 +16,14 @@ export default function AshtakavargaHeat({ data }: { data: AshtakaData }) {
 
   if (!planets.length && !sav) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 text-sm text-slate-500">
+      <div className="ka-card p-4 text-sm text-slate-500">
         No Aṣṭakavarga data.
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 overflow-x-auto">
+    <div className="ka-card p-4 overflow-x-auto">
       <table className="text-xs">
         <thead>
           <tr>

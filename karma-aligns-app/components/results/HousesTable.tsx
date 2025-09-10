@@ -7,7 +7,7 @@ export default function HousesTable({ cusps }: { cusps: number[] | null }) {
   const list = Array.isArray(cusps) ? cusps : [];
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-5">
+    <section className="ka-card p-5">
       <div className="text-xs text-slate-400 mb-2">House cusps</div>
       {list.length !== 12 ? (
         <div className="text-sm text-slate-500">No cusp data.</div>

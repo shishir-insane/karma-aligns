@@ -268,21 +268,21 @@ export default function ResultsPage() {
             )}
 
             <section id="strengths" className="mt-10 grid grid-cols-1 gap-6 scroll-mt-24">
-              {shadbala && <><h2 className="mb-3 text-2xl text-sky-200">Śaḍbala</h2><ShadbalaBars items={shadbala} /></>}
-              {bhavaBala && <><h2 className="mb-3 mt-6 text-2xl text-sky-200">Bhāva Bala</h2><BhavaBalaBars items={bhavaBala} /></>}
-              {ashtaka && <><h2 className="mb-3 mt-6 text-2xl text-sky-200">Aṣṭakavarga</h2><AshtakavargaHeat data={ashtaka} /></>}
+              {shadbala && <><h2 className="mb-3 text-xl text-sky-200">Śaḍbala</h2><ShadbalaBars items={shadbala} /></>}
+              {bhavaBala && <><h2 className="mb-3 mt-6 text-xl text-sky-200">Bhāva Bala</h2><BhavaBalaBars items={bhavaBala} /></>}
+              {ashtaka && <><h2 className="mb-3 mt-6 text-xl text-sky-200">Aṣṭakavarga</h2><AshtakavargaHeat data={ashtaka} /></>}
             </section>
 
             {dashas && (
               <section id="timelines" className="mt-10 scroll-mt-24">
-                <h2 className="mb-3 text-2xl text-sky-200">Dashā timelines</h2>
+                <h2 className="mb-3 text-xl text-sky-200">Dashā timelines</h2>
                 <DashaTimeline systems={dashas} />
               </section>
             )}
 
             <section id="charts" className="mt-10 grid grid-cols-1 gap-8 scroll-mt-24">
               {(rashi || chalit) && <RashiChalit rashi={rashi} chalit={chalit} ascIdx={ascIdx} />}
-              {vargas && (<div><h2 className="mb-3 text-2xl text-sky-200">Vargas</h2><VargasGrids vargas={vargas} /></div>)}
+              {vargas && (<div><h2 className="mb-3 text-xl text-sky-200">Vargas</h2><VargasGrids vargas={vargas} /></div>)}
             </section>
 
             {aspects && (
@@ -293,21 +293,21 @@ export default function ResultsPage() {
 
             {acgLines && (
               <section id="relocation" className="mt-12 scroll-mt-24">
-                <h2 className="mb-4 text-2xl text-sky-200">Relocation & lines</h2>
+                <h2 className="mb-4 text-xl text-sky-200">Relocation & lines</h2>
                 <ACGLinesMap lines={acgLines} advice={acgAdvice || undefined} />
               </section>
             )}
 
             {insights && (
               <section id="insights" className="mt-12 scroll-mt-24">
-                <h2 className="mb-4 text-2xl text-sky-200">Insights & Yogas</h2>
+                <h2 className="mb-4 text-xl text-sky-200">Insights & Yogas</h2>
                 <InsightsYogas data={insights} />
               </section>
             )}
 
             {rows.length > 0 && (
               <section id="placements" className="mt-12 scroll-mt-24">
-                <h2 className="mb-3 text-2xl text-sky-200">Full placements</h2>
+                <h2 className="mb-3 text-xl text-sky-200">Full placements</h2>
                 <ResultsTable rows={rows} />
               </section>
             )}
