@@ -1,8 +1,10 @@
 
 export const dynamic = "force-static";
 
-import "./globals.css";
 import type { Metadata } from "next";
+import { Inter, Playfair_Display } from 'next/font/google'; // Import the fonts
+import "./globals.css";
+
 
 export const metadata: Metadata = {
   title: "Karma Aligns",

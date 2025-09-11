@@ -56,19 +56,19 @@ const constellationsData: Constellation[] = [
       [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]
     ]
   },
-  // Leo (more approximate for illustrative purposes)
+  // Leo (repositioned to be below the moon)
   {
     name: "Leo",
-    offset: { x: 0.70, y: 0.35 },
+    offset: { x: 0.75, y: 0.45 }, // Moved further down and slightly left to avoid the moon and stay in free space
     scale: 100,
     stars: [
-      { x: 0.10, y: 0.80, twinkleDelay: 0.6 },
-      { x: 0.30, y: 0.60, twinkleDelay: 0.1 },
-      { x: 0.45, y: 0.45, twinkleDelay: 0.9 },
-      { x: 0.60, y: 0.40, twinkleDelay: 0.2 },
-      { x: 0.75, y: 0.30, twinkleDelay: 0.5 },
-      { x: 0.90, y: 0.35, twinkleDelay: 0.3 },
-      { x: 0.55, y: 0.65, twinkleDelay: 0.7 }
+      { x: 0.10, y: 0.80, twinkleDelay: 0.6 }, // Denebola
+      { x: 0.30, y: 0.60, twinkleDelay: 0.1 }, // Zosma
+      { x: 0.45, y: 0.45, twinkleDelay: 0.9 }, // Chertan
+      { x: 0.60, y: 0.40, twinkleDelay: 0.2 }, // Algieba
+      { x: 0.75, y: 0.30, twinkleDelay: 0.5 }, // Adhafera
+      { x: 0.90, y: 0.35, twinkleDelay: 0.3 }, // Regulus
+      { x: 0.55, y: 0.65, twinkleDelay: 0.7 }  // Rasalas approx
     ],
     lines: [
       [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [3, 6]
