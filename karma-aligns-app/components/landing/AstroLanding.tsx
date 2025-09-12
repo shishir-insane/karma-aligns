@@ -10,18 +10,18 @@ import BirthForm, { BirthFormValues } from './BirthForm';
 import Image from 'next/image';
 import Moon from './Moon';
 import ShootingStars from './ShootingStars';
-import SampleButtons from './SampleButtons'; // Import the new component
+import SampleButtons from './SampleButtons';
+import SiteFooter from './SiteFooter';
 
 export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelSrc?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [prefillValues, setPrefillValues] = useState<BirthFormValues | undefined>(undefined);
-  const [formKey, setFormKey] = useState(0); // Add a key to force form re-mount
-  const formRef = useRef<HTMLElement>(null);
+  const formRef = useRef<HTMLDivElement>(null); // Re-introduce the form reference for scrolling
+  const headingText = "Balance your Karma, Align your Life."
 
   async function handleSubmit(values: BirthFormValues) {
     setSubmitting(true);
     try {
-      // navigate to results with query params (keeps SSR-safe)
       const params = new URLSearchParams({
         dob: values.date, tob: values.time, tz: values.tz, lat: values.lat, lon: values.lon
       }).toString();
@@ -31,23 +31,18 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
     }
   }
 
+  // CORRECTED: This function now just pre-fills the data and does NOT scroll
   function handlePrefill(values: BirthFormValues) {
     setPrefillValues(values);
-    setFormKey(prevKey => prevKey + 1); // Force re-mount to load new data
-    if (formRef.current) {
-        formRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
   }
 
+  // CORRECTED: This function clears the data and scrolls to the form
   function handleNewForm() {
     setPrefillValues(undefined);
-    setFormKey(prevKey => prevKey + 1); // Force re-mount to clear form
     if (formRef.current) {
-        formRef.current.scrollIntoView({ behavior: 'smooth' });
+      formRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }
-
-  const headingText = "Balance your karma\nAlign your life";
 
   return (
     <div className="relative overflow-hidden">
@@ -55,7 +50,6 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       <div className="absolute inset-0 z-0">
         <Starfield />
         <AmbientBodies />
-        <Moon />
         <ShootingStars maxActive={3} minDelayMs={1800} maxDelayMs={5200} trigger='auto' />
       </div>
 
@@ -64,7 +58,8 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
         <SiteHeader />
 
         {/* Hero Section */}
-        <section id="hero" className="relative flex min-h-screen flex-col items-center p-4 py-20 text-center z-10 gap-6">
+        <section id="hero" className="relative flex min-h-screen flex-col items-center p-4 py-2 text-center z-10 gap-6">
+
           <div className="w-full max-w-sm">
             <div className="relative aspect-square">
               <Image
@@ -79,20 +74,18 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
               <div className="absolute left-[68%] top-[44%] h-3 w-3 animate-pulse rounded-full bg-amber-300/90 shadow-[0_0_40px_8px_rgba(251,191,36,.25)]" />
             </div>
           </div>
-
-          {/* Heading Text - now below the wheel and with a negative top margin */}
-          <div className="w-full relative z-20 -mt-12">
+          <div className="w-full">
             <h1
-              className="font-heading text-6xl md:text-8xl font-extrabold leading-none tracking-tighter text-white hero-heading heading-shadow-container py-4"
+              className="font-heading text-6xl md:text-8xl font-regular leading-none tracking-tighter text-white hero-heading heading-shadow-container py-2"
               data-text={headingText}
             >
-              Balance your <span className="text-fuchsia-400 underline">karma</span>
+              Balance your <span className="text-fuchsia-400">karma</span>
               <br />
-              <span className="text-fuchsia-400 underline">Align</span> your life
+              <span className="text-fuchsia-400">Align</span> your life
             </h1>
           </div>
 
-          {/* New CTA Button */}
+          {/* Sample Data Buttons */}
           <SampleButtons onSelect={handlePrefill} onNewForm={handleNewForm} />
         </section>
 
@@ -101,30 +94,19 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
           <MotionFade delay={0.1}>
             <div className="mx-auto max-w-xl">
               <div className="mb-8 space-y-2 text-center">
-                <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-                  <span className="h-2 w-2 rounded-full bg-fuchsia-300/80" /> Enter your birth details
-                </p>
-                <h2 className="font-heading text-4xl leading-tight tracking-tight text-white md:text-5xl">
-                  Balance your karma
-                  <br />
-                  <span className="text-white/80">Align your life</span>
-                </h2>
                 <p className="max-w-prose font-body text-white/70">
                   Submit your birth details to begin.
                 </p>
               </div>
               <Card className="p-1">
-                {/* Add initialValues prop and the key */}
-                <BirthForm
-                  key={formKey}
-                  onSubmit={handleSubmit}
-                  initialValues={prefillValues}
-                />
+                <BirthForm onSubmit={handleSubmit} initialValues={prefillValues} />
               </Card>
             </div>
           </MotionFade>
         </section>
       </div>
+
+      <SiteFooter />
     </div>
   );
 }
