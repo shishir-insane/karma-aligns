@@ -31,16 +31,28 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
     }
   }
 
-  // CORRECTED: This function now just pre-fills the data and does NOT scroll
+  // UPDATED: This function now pre-fills the data AND scrolls to the form
   function handlePrefill(values: BirthFormValues) {
     setPrefillValues(values);
+    scrollToForm();
   }
 
-  // CORRECTED: This function clears the data and scrolls to the form
+  // This function clears the data and scrolls to the form
   function handleNewForm() {
     setPrefillValues(undefined);
+    scrollToForm();
+  }
+
+  // Helper function for controlled scrolling
+  function scrollToForm() {
     if (formRef.current) {
-      formRef.current.scrollIntoView({ behavior: 'smooth' });
+      const elementTop = formRef.current.offsetTop;
+      const offset = 80; // Add some padding from the top
+      
+      window.scrollTo({
+        top: elementTop - offset,
+        behavior: 'smooth'
+      });
     }
   }
 
@@ -79,7 +91,7 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
               className="font-heading text-6xl md:text-8xl font-regular leading-none tracking-tighter text-white hero-heading heading-shadow-container py-2"
               data-text={headingText}
             >
-              Balance your <span className="text-fuchsia-400">karma</span>
+              Balance your <span className="text-fuchsia-400">Karma</span>
               <br />
               <span className="text-fuchsia-400">Align</span> your life
             </h1>
