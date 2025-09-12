@@ -1,15 +1,22 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@font-face {
+  font-family: 'Giaza';
+  src: url('/fonts/Giaza-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
-/* Design tokens */
+/* 2. Import Tailwind CSS */
+@import "tailwindcss";
+
+/* 3. Design tokens and custom classes (can be after Tailwind) */
 :root {
   color-scheme: dark;
   --bg: #0b0c14;
   --panel:  rgba(255,255,255,0.04);
   --panel-border: rgba(255,255,255,0.10);
   --muted: #a2a6b3;
-  --heading: "Maharlika", serif;
+  --heading: "Giaza", serif;
   --body: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans";
 }
 
@@ -31,6 +38,63 @@ body {
   @apply rounded-2xl border shadow-[0_0_0_1px] backdrop-blur;
   background: var(--panel);
   border-color: var(--panel-border);
+}
+
+/* Focus ring */
+.focus-ring {
+  /* existing styles */
+}
+
+/* Add custom heading classes for the shadow effect */
+.hero-heading {
+  text-shadow: 0px 5px 10px rgba(0, 0, 0, 0.5);
+}
+
+.heading-shadow-container {
+  position: relative;
+  overflow: hidden; 
+}
+
+.heading-shadow-container::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: transparent;
+  text-shadow: 0px 10px 30px rgba(0, 0, 0, 0.8);
+  font-family: var(--heading);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  z-index: -1;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 30%,
+    black 70%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 30%,
+    black 70%,
+    transparent 100%
+  );
+}
+
+/* Glass card */
+.ka-card {
+  @apply rounded-2xl border shadow-[0_0_0_1px] backdrop-blur;
+  background: var(--panel);
+  border-color: var(--panel-border);
+}
+
+.ka-card.border-none {
+  border-color: transparent;
 }
 
 /* Focus ring */

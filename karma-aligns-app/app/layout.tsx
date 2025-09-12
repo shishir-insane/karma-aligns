@@ -1,8 +1,6 @@
-
 export const dynamic = "force-static";
 
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from 'next/font/google'; // Import the fonts
 import "./globals.css";
 
 
@@ -19,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Google Fonts for Maharlika (headings) + Inter (body) */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Maharlika&family=Inter:wght@400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
