@@ -5,7 +5,6 @@ import SiteHeader from './SiteHeader';
 import Starfield from './Starfield';
 import AmbientBodies from './AmbientBodies';
 import ShootingStars from './ShootingStars';
-import Moon from './Moon';
 import ConstellationOverlay from './ConstellationOverlay';
 import SiteFooter from './SiteFooter';
 import { ChevronDown, ArrowUp } from 'lucide-react';
@@ -86,7 +85,6 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       <div className="absolute inset-0 z-0">
         <Starfield />
         <AmbientBodies />
-        <Moon />
         <ConstellationOverlay />
         <ShootingStars maxActive={3} minDelayMs={1800} maxDelayMs={5200} trigger='auto' />
       </div>
@@ -121,7 +119,7 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       {/* Foreground Layer */}
       <div className="relative z-10">
         <SiteHeader />
-        <div className="-mt-6">
+        <div className="-mt-40">
           <Hero wheelSrc={wheelSrc} onCTAClick={scrollToForm} />
         </div>
         <TrustStrip />
