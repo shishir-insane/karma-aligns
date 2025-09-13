@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ScrollText, Globe, Sparkles, Telescope } from 'lucide-react';
+import { ScrollText, Planet, Sparkles, Telescope } from 'lucide-react';
 
 export default function ValueGrid() {
   const items = [
     { icon: <ScrollText className="w-6 h-6" />, label: 'Birth Chart Visualization' },
-    { icon: <Globe className="w-6 h-6" />, label: 'Planetary Positions' },
+    { icon: <Planet className="w-6 h-6" />, label: 'Planetary Positions' },
     { icon: <Sparkles className="w-6 h-6" />, label: 'Karmic Insights' },
     { icon: <Telescope className="w-6 h-6" />, label: 'Personalized Reading' },
   ];

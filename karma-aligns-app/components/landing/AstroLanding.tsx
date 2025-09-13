@@ -121,7 +121,9 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       {/* Foreground Layer */}
       <div className="relative z-10">
         <SiteHeader />
-        <Hero wheelSrc={wheelSrc} onCTAClick={scrollToForm} />
+        <div className="-mt-6">
+          <Hero wheelSrc={wheelSrc} onCTAClick={scrollToForm} />
+        </div>
         <TrustStrip />
         <section id="birth-form" ref={formRef} className="container mx-auto py-16 px-4">
           <ChartForm onSubmit={handleSubmit} initialValues={prefillValues} isSubmitting={submitting} />
