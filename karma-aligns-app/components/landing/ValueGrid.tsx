@@ -1,29 +1,40 @@
-'use client';
+import { LazyMotion, domAnimation, m } from "framer-motion";
 
-import React from 'react';
-import { ScrollText, Globe, Sparkles, Telescope } from 'lucide-react';
+const items = [
+  { title: "Birth Chart Visualization", emoji: "📜" },
+  { title: "Planetary Positions", emoji: "🌌" },
+  { title: "Karmic Insights", emoji: "🔮" },
+  { title: "Personalized Reading", emoji: "🪐" },
+];
 
 export default function ValueGrid() {
-  const items = [
-    { icon: <ScrollText className="w-6 h-6" />, label: 'Birth Chart Visualization' },
-    { icon: <Globe className="w-6 h-6" />, label: 'Planetary Positions' },
-    { icon: <Sparkles className="w-6 h-6" />, label: 'Karmic Insights' },
-    { icon: <Telescope className="w-6 h-6" />, label: 'Personalized Reading' },
-  ];
   return (
-    <div className="mt-12 text-center">
-      <div className="flex items-center justify-center gap-2 mb-6">
-        <p className="text-white/80 text-lg font-semibold">What you&apos;ll receive:</p>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-        {items.map((item, idx) => (
-          <div key={idx} className="bg-gradient-to-br from-fuchsia-500/20 to-purple-600/20 px-4 py-3 rounded-xl border border-fuchsia-500/30 backdrop-blur-sm flex flex-col items-center gap-2">
-            {item.icon}
-            <span className="text-sm font-medium text-white/90">{item.label}</span>
+    <LazyMotion features={domAnimation}>
+      <section id="value" className="mx-auto max-w-6xl px-6 py-12">
+        <div className="card glow p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {items.map((i, idx) => (
+              <m.div
+                key={i.title}
+                className="p-5 relative"
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-20% 0px" }}
+                transition={{ delay: idx * 0.06, duration: 0.45 }}
+              >
+                <div className="text-2xl">{i.emoji}</div>
+                <h3 className="mt-3 font-semibold">{i.title}</h3>
+                <p className="mt-2 text-sm text-white/75">
+                  A brief one-liner about what this gives the user.
+                </p>
+
+                {/* subtle divider lines between cells */}
+                <div className="divider absolute right-0 top-4 bottom-4 hidden lg:block" />
+              </m.div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      </section>
+    </LazyMotion>
   );
 }
-

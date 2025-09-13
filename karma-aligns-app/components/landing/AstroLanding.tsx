@@ -15,6 +15,7 @@ import ChartForm from './ChartForm';
 import DemoProfiles from './DemoProfiles';
 import ValueGrid from './ValueGrid';
 import PreviewSection from './PreviewSection';
+import FloatingCTA from './FloatingCTA';
 
 export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelSrc?: string }) {
   const [submitting, setSubmitting] = useState(false);
@@ -130,6 +131,9 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
           <PreviewSection wheelSrc={wheelSrc} />
         </section>
       </div>
+      
+      {/* Sticky floating CTA, visible after 40% scroll, hidden when the form is on screen */}
+      <FloatingCTA targetId="birth-form" showAfter={0.4} />
 
       <SiteFooter />
     </div>

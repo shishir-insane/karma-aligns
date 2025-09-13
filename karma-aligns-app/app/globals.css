@@ -111,9 +111,7 @@ body {
   background-size: 800px 600px;
 }
 
-/* Utility */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 
 
 /* === Animated starfield layers (CSS-only, GPU-friendly) === */
@@ -662,5 +660,57 @@ body {
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); /* Add subtle glow to lines */
 }
 
-/* Planet Orbit Animations (as before) */
-/* ... (keep your existing planet styles and keyframes) ... */
+/* ===== Headline attention (underline + sparkle) ===== */
+.headline-glow {
+  position: relative;
+  display: inline-block;
+}
+
+/* animated soft underline under the word */
+.headline-glow::after {
+  content: "";
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: -0.18em;
+  height: 0.26em;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(236,72,153,.18), rgba(147,51,234,.55), rgba(236,72,153,.18));
+  filter: blur(6px);
+  background-size: 200% 100%;
+  animation: headline-underline 6s ease-in-out infinite;
+}
+@keyframes headline-underline {
+  0%, 100% { background-position: 0% 0; }
+  50%      { background-position: 100% 0; }
+}
+
+/* tiny sparkle accent at top-right of the word */
+.headline-sparkle {
+  position: absolute;
+  right: -0.25em;
+  top: -0.2em;
+  width: 0.5em;
+  height: 0.5em;
+  background:
+    radial-gradient(circle, #fff 0 40%, transparent 41%),
+    conic-gradient(from 0deg, rgba(255,255,255,.9) 0 25%, transparent 25% 50%, rgba(255,255,255,.9) 50% 75%, transparent 75% 100%);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.8));
+  transform: scale(.9) rotate(0deg);
+  animation: sparkle-pop 3.8s ease-in-out infinite;
+}
+@keyframes sparkle-pop {
+  0%,100% { transform: scale(.9) rotate(0deg); opacity: .7; }
+  50%     { transform: scale(1.15) rotate(45deg); opacity: 1; }
+}
+
+/* Motion safety */
+@media (prefers-reduced-motion: reduce) {
+  .headline-glow::after, .headline-sparkle { animation: none !important; }
+}
+
+/* hide horizontal scrollbar for chip rows on mobile */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
