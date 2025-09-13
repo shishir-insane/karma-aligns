@@ -80,6 +80,24 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
     });
   }
 
+  function scrollToId(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+  
+    const header = document.querySelector("header") as HTMLElement | null;
+    const headerH =
+      (header?.offsetHeight ?? parseInt(getComputedStyle(document.documentElement).getPropertyValue("--ka-header-h")) || 72)
+      + 12; // gap
+  
+    const rect = el.getBoundingClientRect();
+    const y = rect.top + window.scrollY - headerH;
+  
+    // clamp to avoid scrolling past the bottom (footer whitespace)
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    window.scrollTo({ top: Math.min(y, max), behavior: "smooth" });
+  }
+  
+
   return (
     <div className="relative overflow-hidden min-h-screen">
       {/* Background Layer: Stars, Moon, Ambient Bodies */}
@@ -131,7 +149,7 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
           <PreviewSection wheelSrc={wheelSrc} />
         </section>
       </div>
-      
+
       {/* Sticky floating CTA, visible after 40% scroll, hidden when the form is on screen */}
       <FloatingCTA targetId="birth-form" showAfter={0.4} />
 

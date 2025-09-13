@@ -714,3 +714,19 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+:root {
+  --ka-header-h: 72px; /* adjust to your SiteHeader height */
+  --ka-scroll-gap: 12px;
+}
+
+/* if you rely on native anchor scrolling anywhere */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--ka-header-h) + var(--ka-scroll-gap));
+}
+
+/* ensure targeted sections align nicely under sticky header */
+#birth-form {
+  scroll-margin-top: calc(var(--ka-header-h) + var(--ka-scroll-gap));
+}
+

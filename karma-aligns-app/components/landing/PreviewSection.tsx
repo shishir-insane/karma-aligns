@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { scrollToId } from "../utils/scroll";
 
 export default function PreviewSection() {
   return (
@@ -37,14 +38,14 @@ export default function PreviewSection() {
         </ul>
 
         <div className="mt-6">
-          <a
-            href="#birth-form"
+          <button
+            onClick={(e) => { e.preventDefault(); scrollToId("birth-form"); }}
             className="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-semibold text-white
-                       bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-lg hover:shadow-xl
-                       transition-transform duration-300 hover:scale-[1.03] active:scale-95"
+             bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-lg hover:shadow-xl
+             transition-transform duration-300 hover:scale-[1.03] active:scale-95"
           >
             See My Cosmic Blueprint
-          </a>
+          </button>
         </div>
       </div>
     </section>
