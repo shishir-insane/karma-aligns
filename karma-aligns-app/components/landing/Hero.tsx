@@ -2,7 +2,9 @@
 
 import Image from 'next/image';
 import React from 'react';
-import { scrollToId } from "../utils/scroll";
+import { scrollToId } from "@/components/utils/scroll";
+import { H1, Lead, BtnLabel } from "@/components/ui/Type";
+
 
 interface HeroProps {
   wheelSrc?: string;
@@ -15,7 +17,7 @@ export default function Hero({ wheelSrc = '/karma-wheel.png', onCTAClick }: Hero
       <div className="grid w-full max-w-7xl gap-10 md:grid-cols-2">
         {/* Left side: headline, subheading, CTA */}
         <div className="flex flex-col justify-center space-y-6 text-center md:text-left">
-          <h1 className="font-heading text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+          <H1>
             Balance your{" "}
             <span className="headline-glow text-fuchsia-400 drop-shadow-[0_0_20px_rgba(217,70,239,0.5)]">
               Karma
@@ -27,18 +29,14 @@ export default function Hero({ wheelSrc = '/karma-wheel.png', onCTAClick }: Hero
               Life
               <span aria-hidden className="headline-sparkle" />
             </span>
-          </h1>
+          </H1>
 
-          <p className="max-w-xl mx-auto md:mx-0 text-white/80 text-lg">
-            Discover your unique cosmic blueprint with personalized insights.
-          </p>
+          <Lead>Discover your unique cosmic blueprint with personalized insights.</Lead>
+
 
           <div>
-            <button
-              onClick={onCTAClick}
-              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
-            >
-              ✨ Generate My Chart
+            <button className="px-6 py-3 rounded-2xl text-white bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-[0_8px_30px_rgba(168,85,247,.30)]">
+              <BtnLabel>✨ Generate My Chart</BtnLabel>
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { LazyMotion, domAnimation, m } from "framer-motion";
+import { H3, Small } from "@/components/ui/Type";
 
 const items = [
   { title: "Birth Chart Visualization", emoji: "📜" },
@@ -23,10 +24,10 @@ export default function ValueGrid() {
                 transition={{ delay: idx * 0.06, duration: 0.45 }}
               >
                 <div className="text-2xl">{i.emoji}</div>
-                <h3 className="mt-3 font-semibold">{i.title}</h3>
-                <p className="mt-2 text-sm text-white/75">
+                <H3>{i.title}</H3>
+                <Small>
                   A brief one-liner about what this gives the user.
-                </p>
+                </Small>
 
                 {/* subtle divider lines between cells */}
                 <div className="divider absolute right-0 top-4 bottom-4 hidden lg:block" />

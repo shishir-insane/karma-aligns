@@ -1,3 +1,5 @@
+import { H3, Small, Caption } from "@/components/ui/Type";
+
 export default function SiteFooter() {
   return (
     <footer className="relative mt-20 px-6 py-12">
@@ -10,8 +12,9 @@ export default function SiteFooter() {
 
       <div className="relative mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8 ka-fade-up" style={{ ['--ka-delay' as any]: '0ms' }}>
         <div>
-          <div className="text-2xl font-black">karma aligns</div>
-          <p className="text-sm text-white/70 mt-2">Balance your karma, align your life.</p>
+        <H3 className="md:text-2xl font-bold drop-shadow-[0_0_12px_rgba(255,255,255,.15)]">karma aligns</H3>
+        <Small>Balance your karma, align your life.</Small>
+        <Caption>© 2025 Karma Aligns. All rights reserved.</Caption>
         </div>
 
         <nav className="grid grid-cols-3 gap-4 text-sm">
@@ -50,7 +53,6 @@ export default function SiteFooter() {
           >
             Contact Us
           </a>
-          <p className="text-xs text-white/60 mt-4">© 2025 Karma Aligns. All rights reserved.</p>
         </div>
       </div>
     </footer>
