@@ -1,24 +1,26 @@
-// app/api/v1/compute/route.ts
 import { NextResponse } from "next/server";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
+    const raw = await req.json();
+
+    const payload: any = { ...raw };
+    if (payload.date && !payload.dob) payload.dob = payload.date;
+    if (payload.time && !payload.tob) payload.tob = payload.time;
+    if (payload.lat != null) payload.lat = Number(payload.lat);
+    if (payload.lon != null) payload.lon = Number(payload.lon);
+    delete payload.date; delete payload.time;
+
     const upstreamUrl = process.env.COMPUTE_API_URL;
 
     if (!upstreamUrl) {
       if (process.env.NODE_ENV !== "production") {
-        // dynamically import mock only in dev; avoids resolver errors if file is absent
-        const mock = await import("@/components/data/compute.json").then(m => m.default);
+        const mock = await import("../../data/compute.json").then((m) => m.default);
         return NextResponse.json(mock);
       }
-      return NextResponse.json(
-        { error: "COMPUTE_API_URL is not set on the server." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "COMPUTE_API_URL is not set" }, { status: 500 });
     }
 
     const upstream = await fetch(upstreamUrl, {
@@ -27,15 +29,17 @@ export async function POST(req: Request) {
       body: JSON.stringify(payload),
     });
 
+    const text = await upstream.text();
+    const data = (() => { try { return JSON.parse(text); } catch { return text; } })();
+
     if (!upstream.ok) {
-      const text = await upstream.text().catch(() => "");
-      return NextResponse.json(
-        { error: text || `Upstream failed (${upstream.status})` },
-        { status: upstream.status }
-      );
+      const message =
+        typeof data === "string"
+          ? data
+          : data?.error?.message || data?.detail || `Upstream failed (${upstream.status})`;
+      return NextResponse.json({ error: message }, { status: upstream.status });
     }
 
-    const data = await upstream.json();
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json(

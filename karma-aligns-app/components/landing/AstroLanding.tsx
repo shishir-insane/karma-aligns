@@ -101,38 +101,55 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
   // v is your BirthFormValues; adapt names if yours differ
   const handleSubmit = async (v: {
     name?: string;
-    date: string;    // yyyy-mm-dd
-    time: string;    // HH:MM
-    tz: string;      // e.g. +05:30
-    location: string;// human-readable, you may also have lat/lon
-    lat?: number;
-    lon?: number;
+    date: string;
+    time: string;
+    tz: string;
+    location: string;
+    lat?: string | number;
+    lon?: string | number;
   }) => {
     setError(null);
     setSubmitting(true);
     try {
+      const payload: any = {
+        ...v,
+        dob: v.date,
+        tob: v.time,
+        lat: v.lat != null ? Number(v.lat) : undefined,
+        lon: v.lon != null ? Number(v.lon) : undefined,
+      };
+      delete payload.date; delete payload.time;
+  
       const res = await fetch("/api/v1/compute", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(v),
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload),
       });
-
+  
+      const text = await res.text();
+      const data = (() => { try { return JSON.parse(text); } catch { return text; } })();
+  
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Compute failed (${res.status})`);
+        const msg =
+          typeof data === "string"
+            ? data
+            : data?.error?.message || data?.detail || `Compute failed (${res.status})`;
+        throw new Error(msg);
       }
-
-      const json = await res.json(); // <- this is your compute.json shape
-      saveCompute(v, json);
-
-      // Go to results. We keep the URL clean; the page will read from sessionStorage.
-      router.push("/results");
+  
+      // Save both the user input (original UI shape is handy) and result
+      saveCompute(v, data);
+  
+      // Navigate with a tiny cache-buster so Results mounts fresh in App Router
+      const rid = Date.now().toString();
+      router.push(`/results?rid=${rid}`);
     } catch (e: any) {
       setError(e?.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   function handlePrefill(values: BirthFormValues) {
     setPrefillValues(values);

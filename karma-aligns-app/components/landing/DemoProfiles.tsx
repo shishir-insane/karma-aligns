@@ -18,7 +18,7 @@ export default function DemoProfiles({ onSelect, onNewForm }: DemoProfilesProps)
     {
       name: 'Marie Curie',
       icon: <Brain className="w-4 h-4" />,
-      data: { name: 'Marie Curie', date: '1867-11-07', time: '12:00', tz: '+01:00', lat: '52.2297', lon: '21.0122' }
+      data: { name:'Marie Curie', dob:'1867-11-07', tob:'12:00', tz:'+01:00', lat:52.2297, lon:21.0122 }
     },
     {
       name: 'Albert Einstein',
