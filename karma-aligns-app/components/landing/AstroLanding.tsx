@@ -1,11 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import SiteHeader from './SiteHeader';
-import Starfield from './Starfield';
-import AmbientBodies from './AmbientBodies';
-import ShootingStars from './ShootingStars';
-import ConstellationOverlay from './ConstellationOverlay';
 import SiteFooter from './SiteFooter';
 import { ChevronDown, ArrowUp } from 'lucide-react';
 import { BirthFormValues } from './BirthForm';
@@ -17,26 +14,59 @@ import ValueGrid from './ValueGrid';
 import PreviewSection from './PreviewSection';
 import FloatingCTA from './FloatingCTA';
 
+const Starfield = dynamic(() => import('./Starfield'), { ssr: false });
+const AmbientBodies = dynamic(() => import('./AmbientBodies'), { ssr: false });
+const ConstellationOverlay = dynamic(() => import('./ConstellationOverlay'), { ssr: false });
+const ShootingStars = dynamic(() => import('./ShootingStars'), { ssr: false });
+
 export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelSrc?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [prefillValues, setPrefillValues] = useState<BirthFormValues | undefined>(undefined);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const [showScrollIndicator, setShowScrollIndicator] = useState(true);
+  const [scrollState, setScrollState] = useState({ showBackToTop: false, showScrollIndicator: true });
+  const [reduceMotion, setReduceMotion] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduceMotion(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   // Handle scroll to show/hide buttons
   useEffect(() => {
-    const handleScroll = () => {
-      const heroHeight = window.innerHeight * 0.8; // 80% of viewport height
-      setShowBackToTop(window.scrollY > 400);
-      setShowScrollIndicator(window.scrollY < heroHeight);
+    let heroHeight = window.innerHeight * 0.8;
+    let ticking = false;
+
+    const update = () => {
+      const y = window.scrollY;
+      setScrollState({
+        showBackToTop: y > 400,
+        showScrollIndicator: y < heroHeight,
+      });
+      ticking = false;
     };
-    
-    // Set initial state
-    handleScroll();
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    };
+
+    const onResize = () => {
+      heroHeight = window.innerHeight * 0.8;
+      onScroll();
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   async function handleSubmit(values: BirthFormValues) {
@@ -65,10 +95,10 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
     if (formRef.current) {
       const elementTop = formRef.current.offsetTop;
       const offset = 80;
-      
+
       window.scrollTo({
         top: elementTop - offset,
-        behavior: 'smooth'
+        behavior: reduceMotion ? 'auto' : 'smooth'
       });
     }
   }
@@ -76,7 +106,7 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
   function scrollToTop() {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: reduceMotion ? 'auto' : 'smooth'
     });
   }
 
@@ -105,11 +135,13 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
         <Starfield />
         <AmbientBodies />
         <ConstellationOverlay />
-        <ShootingStars maxActive={3} minDelayMs={1800} maxDelayMs={5200} trigger='auto' />
+        {!reduceMotion && (
+          <ShootingStars maxActive={3} minDelayMs={1800} maxDelayMs={5200} trigger="auto" />
+        )}
       </div>
 
       {/* Back to Top Button */}
-      {showBackToTop && (
+      {scrollState.showBackToTop && (
         <button
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 z-50 bg-fuchsia-500/20 backdrop-blur-md border border-fuchsia-400/30 text-fuchsia-300 p-4 rounded-full shadow-xl hover:bg-fuchsia-500/30 hover:scale-110 transition-all duration-300 group"
@@ -120,7 +152,7 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       )}
 
       {/* Fixed Scroll Indicator at bottom of viewport - only show when in hero section */}
-      {showScrollIndicator && (
+      {scrollState.showScrollIndicator && (
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40 animate-bounce">
           <button
             onClick={scrollToForm}
