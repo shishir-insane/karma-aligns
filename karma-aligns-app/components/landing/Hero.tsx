@@ -31,25 +31,20 @@ export default function Hero({ wheelSrc = '/karma-wheel.png', onCTAClick }: Hero
         {/* Right side: headline, subheading, CTA */}
         <div className="flex flex-col justify-center space-y-6 text-center md:text-left">
           <H1>
-            Balance your{" "}
+          Unlock Your Destiny's {" "}
             <span className="headline-glow text-fuchsia-400 drop-shadow-[0_0_20px_rgba(217,70,239,0.5)]">
-              Karma
-              <span aria-hidden className="headline-sparkle" />
-            </span>
-            <br />
-            Align your{" "}
-            <span className="headline-glow text-fuchsia-400 drop-shadow-[0_0_20px_rgba(217,70,239,0.5)]">
-              Life
+            Hidden Blueprint
               <span aria-hidden className="headline-sparkle" />
             </span>
           </H1>
 
-          <Lead>Discover your unique cosmic blueprint with personalized insights.</Lead>
+          <Lead>Transform your life with ancient wisdom tailored to your unique cosmic DNA. 
+          Discover what the stars reveal about your purpose, relationships, and next breakthrough.</Lead>
 
 
           <div>
             <button className="px-6 py-3 rounded-2xl text-white bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-[0_8px_30px_rgba(168,85,247,.30)]">
-              <BtnLabel>✨ Generate My Chart</BtnLabel>
+              <BtnLabel>✨ Reveal My Destiny</BtnLabel>
             </button>
           </div>
         </div>

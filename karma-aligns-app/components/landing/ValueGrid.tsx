@@ -2,10 +2,10 @@ import { LazyMotion, domAnimation, m } from "framer-motion";
 import { H3, Small } from "@/components/ui/Type";
 
 const items = [
-  { title: "Birth Chart Visualization", emoji: "📜" },
-  { title: "Planetary Positions", emoji: "🌌" },
-  { title: "Karmic Insights", emoji: "🔮" },
-  { title: "Personalized Reading", emoji: "🪐" },
+  { title: "Birth Chart Visualization", emoji: "📜", desc: "See Your Soul's Map - A visual guide that reveals your hidden strengths, challenges, and life purpose at a glance." },
+  { title: "Planetary Positions", emoji: "🌌", desc: "Decode Your Cosmic Influences - Understand how planetary energies shape your personality, relationships, and destiny." },
+  { title: "Karmic Insights", emoji: "🔮", desc: "Break Free from Limiting Patterns - Discover your karmic lessons and how to transform obstacles into opportunities." },
+  { title: "Personalized Reading", emoji: "🪐", desc: "Your Personal Life Manual - Get specific guidance tailored to your unique cosmic signature and current life phase." },
 ];
 
 export default function ValueGrid() {
@@ -26,7 +26,7 @@ export default function ValueGrid() {
                 <div className="text-2xl">{i.emoji}</div>
                 <H3>{i.title}</H3>
                 <Small>
-                  A brief one-liner about what this gives the user.
+                  {i.desc}
                 </Small>
 
                 {/* subtle divider lines between cells */}

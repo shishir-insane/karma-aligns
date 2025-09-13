@@ -33,7 +33,7 @@ export const H4: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ classNa
 /* Text */
 export const Lead: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className, ...props }) => (
   <p className={clsx(
-    "font-body text-xl md:text-2xl text-white/85 leading-relaxed tracking-[0.005em]",
+    "font-body text-xl md:text-xl text-white/85 leading-relaxed tracking-[0.005em]",
     className
   )} {...props} />
 );

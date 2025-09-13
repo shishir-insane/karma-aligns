@@ -30,11 +30,12 @@ export default function PreviewSection() {
 
       {/* Right: copy + CTA */}
       <div className="ka-fade-up" style={{ ['--ka-delay' as any]: '150ms' }}>
-        <h3 className="text-xl font-bold">Why this matters</h3>
+        <h3 className="text-xl font-bold">Why Your Cosmic Blueprint Changes Everything:</h3>
         <ul className="mt-4 space-y-2 text-white/80">
-          <li>• Visualize your birth chart instantly.</li>
-          <li>• Understand planetary influences.</li>
-          <li>• Gain actionable karmic insights.</li>
+          <li>• Finally understand your true nature and stop fighting against it</li>
+          <li>• Make decisions aligned with your highest path</li>
+          <li>• Transform relationship patterns that keep repeating</li>
+          <li>• Discover your soul's purpose and step into your power</li>
         </ul>
 
         <div className="mt-6">
