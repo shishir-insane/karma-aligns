@@ -1,86 +1,74 @@
 'use client';
 
 import React from 'react';
-import { BirthFormValues } from '@/components/BirthForm';
+import { BirthFormValues } from './BirthForm';
+import { User, Zap, Brain, Plus } from 'lucide-react';
 
-const samplePeople = [
+interface SampleButtonsProps {
+  onSelect: (values: BirthFormValues) => void;
+  onNewForm: () => void;
+}
+
+export default function SampleButtons({ onSelect, onNewForm }: SampleButtonsProps) {
+  const samples = [
     {
-        name: "Nikola Tesla",
-        date: "1856-07-10",
-        time: "12:00",
-        tz: "+01:00",
-        lat: "44.6467",
-        lon: "15.2259"
+      name: 'Nikola Tesla',
+      icon: <Zap className="w-4 h-4" />,
+      data: {
+        name: 'Nikola Tesla',
+        date: '1856-07-10',
+        time: '00:00',
+        tz: '+01:00',
+        lat: '44.8125',
+        lon: '20.4612'
+      }
     },
     {
-        name: "Marie Curie",
-        date: "1867-11-07",
-        time: "12:00",
-        tz: "+01:00",
-        lat: "48.8566",
-        lon: "2.3522"
+      name: 'Marie Curie',
+      icon: <Brain className="w-4 h-4" />,
+      data: {
+        name: 'Marie Curie',
+        date: '1867-11-07',
+        time: '12:00',
+        tz: '+01:00',
+        lat: '52.2297',
+        lon: '21.0122'
+      }
     },
     {
-        name: "Albert Einstein",
-        date: "1879-03-14",
-        time: "11:30",
-        tz: "+01:00",
-        lat: "48.4069",
-        lon: "9.9945"
+      name: 'Albert Einstein',
+      icon: <User className="w-4 h-4" />,
+      data: {
+        name: 'Albert Einstein',
+        date: '1879-03-14',
+        time: '11:30',
+        tz: '+01:00',
+        lat: '48.4069',
+        lon: '9.9945'
+      }
     }
-];
+  ];
 
-export default function SampleButtons({ onSelect, onNewForm }: { onSelect: (v: BirthFormValues) => void; onNewForm: () => void; }) {
-    return (
-        <div className="flex flex-wrap items-center justify-center gap-4">
-            {samplePeople.map((person, index) => (
-                <div key={index} className="relative group" onClick={() => onSelect(person)}>
-                    <button
-                        className="relative inline-block p-px font-semibold leading-6 text-white bg-gray-800 shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
-                    >
-                        <span
-                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                        ></span>
-                        <span className="relative z-10 block px-6 py-3 rounded-xl bg-gray-950">
-                            <div className="relative z-10 flex items-center space-x-2">
-                                <span className="transition-all duration-500 group-hover:translate-x-1"
-                                >{person.name}</span
-                                >
-                            </div>
-                        </span>
-                    </button>
-                </div>
-            ))}
-            <div className="relative group" onClick={() => onNewForm()}>
-                <button
-                    className="relative inline-block p-px font-semibold leading-6 text-white bg-gray-800 shadow-2xl cursor-pointer rounded-xl shadow-zinc-900 transition-transform duration-300 ease-in-out hover:scale-105 active:scale-95"
-                >
-                    <span
-                        className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 p-[2px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                    ></span>
-                    <span className="relative z-10 block px-6 py-3 rounded-xl bg-gray-950">
-                        <div className="relative z-10 flex items-center space-x-2">
-                            <span className="transition-all duration-500 group-hover:translate-x-1"
-                            >New Form</span
-                            >
-                            <svg
-                                className="w-6 h-6 transition-transform duration-500 group-hover:translate-x-1"
-                                data-slot="icon"
-                                aria-hidden="true"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    clipRule="evenodd"
-                                    d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-                                    fillRule="evenodd"
-                                ></path>
-                            </svg>
-                        </div>
-                    </span>
-                </button>
-            </div>
-        </div>
-    );
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 w-full">
+      {samples.map((sample, index) => (
+        <button
+          key={sample.name}
+          onClick={() => onSelect(sample.data)}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-700/50 hover:bg-slate-600/60 border-2 border-slate-600/40 hover:border-slate-500/60 text-sm font-medium text-white/80 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          {sample.icon}
+          <span>{sample.name}</span>
+        </button>
+      ))}
+      
+      <button
+        onClick={onNewForm}
+        className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-700/50 hover:bg-slate-600/60 border-2 border-slate-600/40 hover:border-slate-500/60 text-sm font-medium text-white/80 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+      >
+        <Plus className="w-4 h-4" />
+        <span>New Form</span>
+      </button>
+    </div>
+  );
 }
