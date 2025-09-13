@@ -15,7 +15,20 @@ export default function Hero({ wheelSrc = '/karma-wheel.png', onCTAClick }: Hero
   return (
     <section className="relative flex min-h-screen items-center justify-center p-6">
       <div className="grid w-full max-w-7xl gap-10 md:grid-cols-2">
-        {/* Left side: headline, subheading, CTA */}
+        {/* Left side: zodiac wheel */}
+        <div className="flex items-center justify-center">
+          <div className="relative w-72 h-72 md:w-96 md:h-96">
+            <Image
+              src={wheelSrc}
+              alt="Zodiac wheel"
+              fill
+              priority
+              className="rounded-full opacity-95 spin-slow select-none"
+            />
+            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_50%,#8ecbff22,transparent_60%)]" />
+          </div>
+        </div>
+        {/* Right side: headline, subheading, CTA */}
         <div className="flex flex-col justify-center space-y-6 text-center md:text-left">
           <H1>
             Balance your{" "}
@@ -41,19 +54,7 @@ export default function Hero({ wheelSrc = '/karma-wheel.png', onCTAClick }: Hero
           </div>
         </div>
 
-        {/* Right side: zodiac wheel */}
-        <div className="flex items-center justify-center">
-          <div className="relative w-72 h-72 md:w-96 md:h-96">
-            <Image
-              src={wheelSrc}
-              alt="Zodiac wheel"
-              fill
-              priority
-              className="rounded-full opacity-95 spin-slow select-none"
-            />
-            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_50%,#8ecbff22,transparent_60%)]" />
-          </div>
-        </div>
+        
       </div>
     </section>
   );
