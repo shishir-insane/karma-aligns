@@ -5,16 +5,25 @@ const RESULT_KEY = "ka:lastResult";
 const INPUT_KEY  = "ka:lastInput";
 
 export function saveCompute(input: unknown, result: unknown) {
-  const blob = pako.deflate(JSON.stringify(result), { to: "string" });
-  sessionStorage.setItem("ka:lastInput", JSON.stringify(input));
-  sessionStorage.setItem("ka:lastResultZ", blob); // compressed
+  try {
+    const zipped = pako.deflate(JSON.stringify(result), { to: "string" });
+    sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
+    sessionStorage.setItem(RESULT_KEY, zipped);
+  } catch {}
 }
-export function loadCompute<T=any>() {
-  const input = JSON.parse(sessionStorage.getItem("ka:lastInput") || "null") || undefined;
-  const raw = sessionStorage.getItem("ka:lastResultZ");
-  const result = raw ? JSON.parse(pako.inflate(raw, { to: "string" })) : undefined;
-  return { input, result as T };
+
+export function loadCompute(): { input?: any; result?: any } {
+  try {
+    const input  = JSON.parse(sessionStorage.getItem(INPUT_KEY) || "null") || undefined;
+    const raw    = sessionStorage.getItem(RESULT_KEY);
+    const json   = raw ? pako.inflate(raw, { to: "string" }) : undefined;
+    const result = json ? JSON.parse(json) : undefined;
+    return { input, result };
+  } catch {
+    return {};
+  }
 }
+
 
 export function clearCompute() {
   try {
