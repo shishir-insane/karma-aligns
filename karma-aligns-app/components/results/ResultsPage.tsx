@@ -5,29 +5,15 @@ import { useMemo, useState } from "react";
 import SiteHeader from "@/components/landing/SiteHeader";
 import SiteFooter from "@/components/landing/SiteFooter";
 import { H1, H2, H3, Body, Small, BtnLabel } from "@/components/ui/Type";
+import { normalizeCompute, type Norm } from "./normalizeCompute";
 
-/** Shape hints; everything is optional so the UI never crashes. */
-type ComputeResult = {
-  basics?: { sun?: string; moon?: string; rising?: string; nakshatra?: string; ayanamsha?: string };
-  positions?: Array<{ body: string; sign: string; degree: number; house?: number; retro?: boolean }>;
-  strengths?: Array<{ body: string; score: number }>;                  // 0..10 or 0..100
-  bhava?: Array<{ house: number; score: number }>;
-  ashtakavarga?: { headers?: string[]; rows?: Array<{ name: string; cells: number[] }> };
-  dashas?: Array<{ system: string; items: Array<{ name: string; from: string; to: string; strength?: number }> }>;
-  aspects?: Array<{ from: string; to: string; type: string }>;
-  yogas?: Array<{ title: string; summary: string; tag?: string }>;
-  notes?: Array<{ title: string; bullets: string[] }>;
-  acg?: {
-    advice?: Record<string, string[]>;
-    lines?: Record<string, { ASC?: Array<{lat:number;lon:number}>, DSC?: Array<{lat:number;lon:number}> }>;
-  };
-};
-
-/* ========== tiny UI helpers ========== */
+/* ------- tiny primitives ------- */
 const Card = ({ children, className = "" }: React.PropsWithChildren<{className?: string}>) => (
   <div className={`rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_6px_24px_rgba(99,102,241,.18)] ${className}`}>{children}</div>
 );
-
+const Chip = ({ children, on }: { children: React.ReactNode; on?: boolean }) => (
+  <span className={`px-3 py-1.5 rounded-full text-xs border ${on ? 'bg-gradient-to-r from-fuchsia-500/70 to-purple-600/70 border-white/20' : 'bg-white/5 border-white/10'}`}>{children}</span>
+);
 const Stat = ({ label, value }: {label: string; value?: string}) => (
   <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 min-w-[9rem]">
     <div className="text-xs text-white/60">{label}</div>
@@ -35,24 +21,20 @@ const Stat = ({ label, value }: {label: string; value?: string}) => (
   </div>
 );
 
-/* ========== bar chart (SVG, no deps) ========== */
-function BarChart({ data, max = undefined }: { data: Array<{ label: string; value: number }>; max?: number }) {
+/* ------- bar chart ------- */
+function Bars({ data, unit = "" }: { data: Array<{ label: string; value: number }>; unit?: string }) {
   if (!data?.length) return null;
-  const vmax = max ?? Math.max(...data.map(d => d.value || 0), 1);
+  const vmax = Math.max(...data.map(d => d.value || 0), 1);
   return (
     <div className="space-y-3">
       {data.map((d) => (
         <div key={d.label}>
           <div className="flex justify-between text-xs text-white/60 mb-1">
             <span className="truncate">{d.label}</span>
-            <span>{d.value.toFixed(2)}</span>
+            <span>{d.value.toFixed(2)}{unit}</span>
           </div>
           <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-600"
-              style={{ width: `${Math.min(100, (d.value / vmax) * 100)}%` }}
-              title={`${d.label}: ${d.value}`}
-            />
+            <div className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-600" style={{ width: `${Math.min(100, (d.value / vmax) * 100)}%` }} />
           </div>
         </div>
       ))}
@@ -60,7 +42,7 @@ function BarChart({ data, max = undefined }: { data: Array<{ label: string; valu
   );
 }
 
-/* ========== heatmap (ashtakavarga) ========== */
+/* ------- heatmap (ashtakavarga) ------- */
 function Heatmap({ headers = [], rows = [] as Array<{ name: string; cells: number[] }> }) {
   if (!rows?.length) return null;
   const maxV = Math.max(...rows.flatMap(r => r.cells ?? [0]), 1);
@@ -73,37 +55,27 @@ function Heatmap({ headers = [], rows = [] as Array<{ name: string; cells: numbe
             <div key={i} className="text-xs text-center text-white/60 py-1">{h ?? `C${i+1}`}</div>
           ))}
           {rows.map((r, ri) => (
-            <FragmentRow key={ri} name={r.name} cells={r.cells} maxV={maxV} />
+            <>
+              <div key={`n${ri}`} className="text-sm pr-3 py-1.5 text-white/80">{r.name}</div>
+              {r.cells.map((v, ci) => {
+                const pct = v / maxV;
+                return (
+                  <div key={`${ri}-${ci}`} className="p-1">
+                    <div className="h-7 rounded-md" style={{ background: `linear-gradient(180deg, rgba(217,70,239,${0.12 + pct*0.65}) 0%, rgba(99,102,241,${0.12 + pct*0.65}) 100%)` }} />
+                  </div>
+                );
+              })}
+            </>
           ))}
         </div>
       </div>
     </div>
   );
 }
-function FragmentRow({ name, cells, maxV }: { name: string; cells: number[]; maxV: number }) {
-  return (
-    <>
-      <div className="text-sm pr-3 py-1.5 text-white/80">{name}</div>
-      {cells.map((v, ci) => {
-        const pct = v / maxV;
-        return (
-          <div key={ci} className="p-1">
-            <div
-              title={`${name} • ${v}`}
-              className="h-7 rounded-md"
-              style={{ background: `linear-gradient(180deg, rgba(217,70,239,${0.12 + pct*0.65}) 0%, rgba(99,102,241,${0.12 + pct*0.65}) 100%)` }}
-            />
-          </div>
-        );
-      })}
-    </>
-  );
-}
 
-/* ========== timeline (dashas / transits) ========== */
+/* ------- timeline (dashas / transits) ------- */
 function Timeline({ items, caption }: { items: Array<{ name: string; from: string; to: string; strength?: number }>; caption?: string }) {
   if (!items?.length) return null;
-  // Normalize dates → positions in a single row (horizontal scroll on mobile).
   const t0 = new Date(items[0].from).getTime();
   const t1 = new Date(items[items.length - 1].to).getTime();
   const span = Math.max(1, t1 - t0);
@@ -118,21 +90,12 @@ function Timeline({ items, caption }: { items: Array<{ name: string; from: strin
             const left = `${a * 100}%`;
             const width = `${Math.max(0.02, (b - a)) * 100}%`;
             return (
-              <div
-                key={i}
-                className="absolute top-3 h-7 rounded-lg text-[11px] leading-7 text-center text-white/90"
-                style={{
-                  left, width,
-                  background: "linear-gradient(90deg, rgba(236,72,153,.55), rgba(147,51,234,.55))",
-                  boxShadow: "0 4px 14px rgba(168,85,247,.25)"
-                }}
-                title={`${it.name}: ${it.from} → ${it.to}`}
-              >
+              <div key={i} className="absolute top-3 h-7 rounded-lg text-[11px] leading-7 text-center"
+                   style={{ left, width, background: "linear-gradient(90deg, rgba(236,72,153,.55), rgba(147,51,234,.55))", boxShadow: "0 4px 14px rgba(168,85,247,.25)" }}>
                 {it.name}
               </div>
             );
           })}
-          {/* timeline axis */}
           <div className="absolute left-0 right-0 bottom-1 text-[10px] text-white/50 flex justify-between px-2">
             <span>{new Date(items[0].from).toLocaleDateString()}</span>
             <span>{new Date(items[items.length - 1].to).toLocaleDateString()}</span>
@@ -143,29 +106,18 @@ function Timeline({ items, caption }: { items: Array<{ name: string; from: strin
   );
 }
 
-/* ========== table ========== */
-function PlacementsTable({ items = [] as Array<{ body: string; sign: string; degree: number; house?: number; retro?: boolean }> }) {
-  if (!items?.length) return null;
+/* ------- placements tables ------- */
+function Table({ head, rows }: { head: string[]; rows: (string|number|React.ReactNode)[][] }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead className="text-white/70">
-          <tr className="border-b border-white/10">
-            <th className="text-left py-2 pr-4">Body</th>
-            <th className="text-left py-2 pr-4">Sign</th>
-            <th className="text-left py-2 pr-4">Degree</th>
-            <th className="text-left py-2 pr-4">House</th>
-            <th className="text-left py-2 pr-4">Retro</th>
-          </tr>
+          <tr className="border-b border-white/10">{head.map((h,i)=><th key={i} className="text-left py-2 pr-4">{h}</th>)}</tr>
         </thead>
         <tbody className="text-white/85">
-          {items.map((p, i) => (
-            <tr key={i} className="border-b border-white/5">
-              <td className="py-2 pr-4">{p.body}</td>
-              <td className="py-2 pr-4">{p.sign}</td>
-              <td className="py-2 pr-4">{p.degree.toFixed(2)}°</td>
-              <td className="py-2 pr-4">{p.house ?? "—"}</td>
-              <td className="py-2 pr-4">{p.retro ? "℞" : "—"}</td>
+          {rows.map((r,ri)=>(
+            <tr key={ri} className="border-b border-white/5">
+              {r.map((c,ci)=><td key={ci} className="py-2 pr-4">{c as any}</td>)}
             </tr>
           ))}
         </tbody>
@@ -174,7 +126,7 @@ function PlacementsTable({ items = [] as Array<{ body: string; sign: string; deg
   );
 }
 
-/* ========== ACG map (keep your previous placeholder) ========== */
+/* ------- ACG map (placeholder polylines) ------- */
 function ACGMap({ lines = {}, active }: { lines: any; active: string[] }) {
   const planets = Object.keys(lines || {});
   if (!planets.length) return null;
@@ -213,96 +165,109 @@ function toPolyline(points?: Array<{lat:number;lon:number}>) {
   }).join(' ');
 }
 
-/* ========== MAIN PAGE ========== */
+/* ------- MAIN ------- */
 export default function ResultsPage({
   name = 'Guest',
   birth = { date: '', time: '', tz: '', location: '' },
   chartImg = '/sample-chart.png',
   acg,
-  data // full compute result if you pass it (optional)
+  data,
 }: {
   name?: string;
   birth?: { date: string; time: string; tz: string; location: string };
   chartImg?: string;
-  acg?: ComputeResult["acg"];
-  data?: ComputeResult;        // pass full result if available
+  acg?: Norm["acg"];
+  data?: any;   // raw compute; we normalize here
 }) {
-  const [activePlanets, setActivePlanets] = useState<string[]>(["Jupiter","Venus","Sun"]);
-  const toggle = (p: string) => setActivePlanets(s => s.includes(p) ? s.filter(x=>x!==p) : [...s, p]);
-
-  const basics = data?.basics;
-  const strengths = data?.strengths;
-  const bhava = data?.bhava;
-  const ashtaka = data?.ashtakavarga;
-  const dasha = data?.dashas?.[0]; // show first system by default
-  const positions = data?.positions;
+  const norm = useMemo<Norm>(() => normalizeCompute({ ...(data||{}), acg }), [data, acg]);
+  const [activePlanets, setActive] = useState<string[]>(["Jupiter","Venus","Sun"]);
+  const toggle = (p: string) => setActive(s => s.includes(p) ? s.filter(x=>x!==p) : [...s, p]);
 
   return (
     <div className="relative min-h-screen bg-[#0b0e18] text-white">
       <SiteHeader />
 
-      {/* Header */}
-      <section className="container mx-auto px-6 pt-28 pb-8">
+      {/* Sticky sub-nav (mobile friendly) */}
+      <div className="sticky top-14 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/30 bg-black/10 border-y border-white/10">
+        <div className="container mx-auto px-6 py-2 overflow-x-auto no-scrollbar flex gap-3 text-xs">
+          {[
+            ["overview","#overview"],["strength","#strength"],["ashtaka","#ashtaka"],["dashas","#dashas"],
+            ["transits","#transits"],["map","#acg"],["yogas","#yogas"],["tables","#tables"],["raw","#raw"]
+          ].map(([t,href])=>(
+            <a key={href} href={href} className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/8">{t}</a>
+          ))}
+        </div>
+      </div>
+
+      {/* Header / Overview */}
+      <section id="overview" className="container mx-auto px-6 pt-20 pb-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
             <H1 className="leading-[1.05]">Chart results</H1>
             <Small className="mt-2">{name} • {birth.date} {birth.time} {birth.tz} • {birth.location}</Small>
           </div>
-          <div className="flex gap-3">
-            <a href="/" className="rounded-2xl px-4 py-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-[0_8px_30px_rgba(168,85,247,.30)]"><BtnLabel>✨ Generate another</BtnLabel></a>
-          </div>
+          <a href="/" className="rounded-2xl px-4 py-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 shadow-[0_8px_30px_rgba(168,85,247,.30)]"><BtnLabel>✨ Generate another</BtnLabel></a>
+        </div>
+
+        <div className="mt-6 flex gap-3 flex-wrap">
+          <Stat label="Sun sign" value={norm.identity?.sun} />
+          <Stat label="Moon sign" value={norm.identity?.moon} />
+          <Stat label="Rising"   value={norm.identity?.rising} />
+          <Stat label="Nakshatra" value={norm.identity?.nakshatra} />
+          <Stat label="Ayanāṃśa" value={norm.identity?.ayanamsha} />
         </div>
       </section>
 
-      {/* Top stats */}
-      {(basics || positions) && (
-        <section className="container mx-auto px-6 pb-6">
-          <div className="flex gap-3 flex-wrap">
-            <Stat label="Sun sign" value={basics?.sun ?? positions?.find(p=>p.body==='Sun')?.sign} />
-            <Stat label="Moon sign" value={basics?.moon ?? positions?.find(p=>p.body==='Moon')?.sign} />
-            <Stat label="Rising"   value={basics?.rising ?? positions?.find(p=>p.body==='Ascendant')?.sign} />
-            <Stat label="Ayanāṃśa" value={basics?.ayanamsha} />
-          </div>
+      {/* Strengths / Shadbala / Bhava */}
+      {(norm.strengths?.length || norm.shadbala?.length || norm.bhavaBala?.length) && (
+        <section id="strength" className="container mx-auto px-6 pb-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {norm.strengths?.length ? <Card><H2 className="mb-3">Planet strengths</H2><Bars data={norm.strengths.map(s=>({label:s.body, value:s.score}))} /></Card> : null}
+          {norm.shadbala?.length ? <Card><H2 className="mb-3">Shadbala</H2><Bars data={norm.shadbala.map(s=>({label:s.pillar, value:s.value}))} /></Card> : null}
+          {norm.bhavaBala?.length ? <Card><H2 className="mb-3">Bhava Bala</H2><Bars data={norm.bhavaBala.map(h=>({label:`House ${h.house}`, value:h.score}))} /></Card> : null}
         </section>
       )}
 
-      {/* Planet strengths */}
-      {strengths?.length ? (
-        <section className="container mx-auto px-6 pb-10">
-          <H2 className="mb-3">Strengths</H2>
-          <Card><BarChart data={strengths.map(s=>({label:s.body, value:s.score}))} /></Card>
-        </section>
-      ) : null}
-
-      {/* Bhava bala */}
-      {bhava?.length ? (
-        <section className="container mx-auto px-6 pb-10">
-          <H2 className="mb-3">Bhava Bala</H2>
-          <Card><BarChart data={bhava.map(h=>({label:`House ${h.house}`, value:h.score}))} /></Card>
-        </section>
-      ) : null}
-
-      {/* Ashtakavarga heatmap */}
-      {ashtaka?.rows?.length ? (
-        <section className="container mx-auto px-6 pb-10">
+      {/* Ashtakavarga */}
+      {norm.ashtakavarga?.rows?.length ? (
+        <section id="ashtaka" className="container mx-auto px-6 pb-10">
           <H2 className="mb-3">Ashtakavarga</H2>
-          <Card><Heatmap headers={ashtaka.headers} rows={ashtaka.rows} /></Card>
+          <Card><Heatmap headers={norm.ashtakavarga.headers} rows={norm.ashtakavarga.rows} /></Card>
         </section>
       ) : null}
 
-      {/* Dasha timeline */}
-      {dasha?.items?.length ? (
-        <section className="container mx-auto px-6 pb-10">
+      {/* Dasha timelines */}
+      {norm.dashas?.length ? (
+        <section id="dashas" className="container mx-auto px-6 pb-10">
           <H2 className="mb-3">Dasha timelines</H2>
+          <div className="space-y-4">
+            {norm.dashas.map((d, i) => (
+              <Card key={i}><Small className="mb-2 text-white/70">{d.system}</Small><Timeline items={d.items} caption="Major periods" /></Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Transits (compact day-by-day scroller) */}
+      {norm.transits?.length ? (
+        <section id="transits" className="container mx-auto px-6 pb-10">
+          <H2 className="mb-3">Transits</H2>
           <Card>
-            <Small className="mb-2 text-white/70">{dasha.system}</Small>
-            <Timeline items={dasha.items} caption="Major periods" />
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-2 px-2">
+              {norm.transits.map((t, i) => (
+                <div key={i} className="min-w-[220px] rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs text-white/60 mb-2">{new Date(t.date).toDateString()}</div>
+                  <ul className="space-y-1 text-sm">
+                    {t.hits.map((h, hi)=> <li key={hi}>• {h.body} {h.type} {h.target}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </Card>
         </section>
       ) : null}
 
-      {/* Chart + Insights */}
-      <section className="container mx-auto px-6 pb-12 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+      {/* Chart + Yogas / Remedies / Doshas */}
+      <section id="yogas" className="container mx-auto px-6 pb-12 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
         <Card>
           <div className="relative overflow-hidden rounded-xl group">
             <Image src={chartImg} alt="Birth chart" width={900} height={900} className="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]" />
@@ -311,51 +276,97 @@ export default function ResultsPage({
             </div>
           </div>
         </Card>
-        <div className="space-y-4">
-          <H3>Insights & Yogas</H3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data?.yogas?.slice(0, 6).map((y, i) => (
-              <Card key={i} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">{y.title}</div>
-                  {y.tag && <span className="px-2 py-1 rounded-full text-xs bg-white/10 border border-white/15">{y.tag}</span>}
-                </div>
-                <Small className="mt-2">{y.summary}</Small>
-              </Card>
-            ))}
-            {!data?.yogas?.length && (
-              <Small className="text-white/70">We’ll surface notable yogas and practical tips here when available.</Small>
-            )}
-          </div>
+        <div className="space-y-6">
+          {norm.yogas?.length ? (
+            <>
+              <H3>Notable Yogas</H3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {norm.yogas.slice(0,8).map((y, i)=>(
+                  <Card key={i} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold">{y.title}</div>
+                      {y.tag && <Chip>{y.tag}</Chip>}
+                    </div>
+                    <Small className="mt-2">{y.summary}</Small>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {norm.remedies?.length ? (
+            <>
+              <H3>Remedies</H3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {norm.remedies.map((r,i)=>(
+                  <Card key={i}><div className="font-semibold">{r.title}</div><Small className="mt-2">{r.summary}</Small></Card>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {norm.doshas?.length ? (
+            <>
+              <H3>Doshas</H3>
+              <div className="flex flex-wrap gap-2">
+                {norm.doshas.map((d,i)=>(
+                  <Chip key={i} on>{d.title} • {d.level}</Chip>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
       </section>
 
-      {/* Astrocartography */}
-      {(acg?.lines && Object.keys(acg.lines).length) ? (
-        <section className="container mx-auto px-6 pb-12">
+      {/* ACG map */}
+      {(norm.acg?.lines && Object.keys(norm.acg.lines).length) ? (
+        <section id="acg" className="container mx-auto px-6 pb-12">
           <H2 className="mb-3">Relocation & lines</H2>
           <Card>
             <div className="flex flex-wrap gap-2 mb-4">
-              {Object.keys(acg.lines).map(p => (
-                <button key={p} onClick={()=>toggle(p)}
-                  className={`px-3 py-1.5 rounded-full border text-sm transition ${activePlanets.includes(p) ? 'bg-gradient-to-r from-fuchsia-500/70 to-purple-600/70 border-white/20' : 'bg-white/5 border-white/10 hover:bg-white/8'}`}>
-                  {p}
+              {Object.keys(norm.acg.lines).map(p => (
+                <button key={p} onClick={()=>setActive(p)} className="px-3 py-1.5 rounded-full border text-sm transition bg-white/5 border-white/10 hover:bg-white/8">
+                  <span className={activePlanets.includes(p) ? "font-semibold" : ""}>{p}</span>
                 </button>
               ))}
             </div>
-            <ACGMap lines={acg.lines} active={activePlanets} />
-            <Small className="mt-3 block text-white/60">ASC = growth/identity experiences • DSC = relationships mirror</Small>
+            <ACGMap lines={norm.acg.lines} active={activePlanets} />
+            <Small className="mt-3 block text-white/60">ASC = growth/identity • DSC = relationships</Small>
           </Card>
         </section>
       ) : null}
 
-      {/* Placements table */}
-      {positions?.length ? (
-        <section className="container mx-auto px-6 pb-20">
-          <H2 className="mb-3">Full placements</H2>
-          <Card><PlacementsTable items={positions} /></Card>
+      {/* Tables: placements & houses */}
+      {(norm.positions?.length || norm.houses?.length) && (
+        <section id="tables" className="container mx-auto px-6 pb-16 grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {norm.positions?.length ? (
+            <Card>
+              <H2 className="mb-3">Full placements</H2>
+              <Table
+                head={["Body","Sign","Degree","House","Retro"]}
+                rows={norm.positions.map(p=>[p.body,p.sign,`${p.degree.toFixed(2)}°`,p.house ?? "—", p.retro ? "℞" : "—"])}
+              />
+            </Card>
+          ) : null}
+          {norm.houses?.length ? (
+            <Card>
+              <H2 className="mb-3">Houses</H2>
+              <Table
+                head={["House","Sign","Lord","Degree"]}
+                rows={norm.houses.map(h=>[h.house, h.sign ?? "—", h.lord ?? "—", h.degree ? `${h.degree}°` : "—"])}
+              />
+            </Card>
+          ) : null}
         </section>
-      ) : null}
+      )}
+
+      {/* Raw data (dev / power users) */}
+      <section id="raw" className="container mx-auto px-6 pb-24">
+        <details className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <summary className="cursor-pointer text-sm text-white/80">Show raw data</summary>
+          <pre className="mt-3 text-xs text-white/70 overflow-x-auto">{JSON.stringify(norm.raw ?? data ?? {}, null, 2)}</pre>
+        </details>
+      </section>
 
       <SiteFooter />
     </div>
