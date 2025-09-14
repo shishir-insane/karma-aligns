@@ -119,16 +119,16 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
         lon: v.lon != null ? Number(v.lon) : undefined,
       };
       delete payload.date; delete payload.time;
-  
+
       const res = await fetch("/api/v1/compute", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
       });
-  
+
       const text = await res.text();
       const data = (() => { try { return JSON.parse(text); } catch { return text; } })();
-  
+
       if (!res.ok) {
         const msg =
           typeof data === "string"
@@ -136,10 +136,10 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
             : data?.error?.message || data?.detail || `Compute failed (${res.status})`;
         throw new Error(msg);
       }
-  
+
       // Save both the user input (original UI shape is handy) and result
       saveCompute(v, data);
-  
+
       // Navigate with a tiny cache-buster so Results mounts fresh in App Router
       const rid = Date.now().toString();
       router.push(`/results?rid=${rid}`);
@@ -149,7 +149,7 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       setSubmitting(false);
     }
   };
-  
+
 
   function handlePrefill(values: BirthFormValues) {
     setPrefillValues(values);
@@ -211,34 +211,26 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       </div>
 
       {/* Warning Hook Banner */}
-      <div className="relative z-20 bg-gradient-to-r from-red-600/90 to-orange-500/90 backdrop-blur-md border-b border-orange-400/30">
+      {/* <div className="relative z-20 bg-gradient-to-r from-red-600/90 to-orange-500/90 backdrop-blur-md border-b border-orange-400/30">
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-center text-center">
             <Zap className="w-4 h-4 text-yellow-300 mr-2 animate-pulse" />
             <p className="text-white text-sm font-medium">
-              ⚠️ Warning: This reading may completely change how you see yourself and your destiny
+              ⚠️ Current cosmic window closes in: {String(timeLeft.hours).padStart(2, '0')}:
+            {String(timeLeft.minutes).padStart(2, '0')}:
+            {String(timeLeft.seconds).padStart(2, '0')}. These readings may completely change how you see yourself and your destiny.
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Live Viewer Count */}
-      <div className="fixed top-20 right-4 z-50 bg-green-500/20 backdrop-blur-md border border-green-400/30 text-green-300 px-3 py-1 rounded-full text-xs">
+      {/* <div className="fixed top-20 right-4 z-50 bg-green-500/20 backdrop-blur-md border border-green-400/30 text-green-300 px-3 py-1 rounded-full text-xs">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           <span>{viewerCount} people viewing now</span>
         </div>
-      </div>
-
-      {/* Urgency Timer */}
-      <div className="inline-flex items-center bg-red-500/20 backdrop-blur-md border border-red-400/30 text-red-300 px-4 py-2 rounded-full mb-6">
-        <Clock className="w-4 h-4 mr-2" />
-        <span className="text-sm font-medium">
-          Current cosmic window closes in: {String(timeLeft.hours).padStart(2, '0')}:
-          {String(timeLeft.minutes).padStart(2, '0')}:
-          {String(timeLeft.seconds).padStart(2, '0')}
-        </span>
-      </div>
+      </div> */}
 
       {/* Back to Top Button */}
       {scrollState.showBackToTop && (
@@ -270,30 +262,39 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       {/* Foreground Layer */}
       <div className="relative z-10">
         <SiteHeader />
+        
         <div className="-mt-40">
           <Hero wheelSrc={wheelSrc} onCTAClick={scrollToForm} />
         </div>
+        {/* Urgency Timer */}
+        {/* <div className="content-center items-center bg-red-500/20 backdrop-blur-md border border-red-400/30 text-red-300 px-4 py-2 rounded-full mb-6">
+          <Clock className="w-4 h-4 mr-2" />
+          <span className="text-sm font-medium">
+            Current cosmic window closes in: {String(timeLeft.hours).padStart(2, '0')}:
+            {String(timeLeft.minutes).padStart(2, '0')}:
+            {String(timeLeft.seconds).padStart(2, '0')}
+          </span>
+        </div> */}
         <TrustStrip />
         {/* Testimonial Carousel */}
         <div className="w-full bg-black/30 backdrop-blur-sm border-t border-b border-white/10 py-3">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 max-w-2xl mx-auto mb-8">
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 max-w-2xl mx-auto mb-8 mt-8">
             <div className="flex items-center justify-center mb-4">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               ))}
             </div>
             <blockquote className="text-gray-300 italic text-lg mb-4">
-              "Finally understand why I am the way I am! This reading revealed patterns I've been blind to for years.
-              My relationships have completely transformed."
+            "I was skeptical, but the daily horoscopes are spot-on. It's the perfect way to align my day with the stars. 10/10 recommend for my Gen-Z fam!"
             </blockquote>
-            <cite className="text-fuchsia-300 font-medium">— Sarah M., Los Angeles</cite>
+            <cite className="text-fuchsia-300 font-medium"> Kavya Mehta, Los Angeles</cite>
           </div>
         </div>
         {/* Guarantee */}
-        <p className="text-sm text-gray-400 mt-4">
-            <CheckCircle className="w-4 h-4 text-green-400 inline mr-1" />
-            100% Satisfaction Guaranteed or Your Reading is Free
-          </p>
+        {/* <p className="text-sm text-gray-400 mt-4">
+          <CheckCircle className="w-4 h-4 text-green-400 inline mr-1" />
+          100% Satisfaction Guaranteed or Your Reading is Free
+        </p> */}
         {/* Scarcity Section */}
         <section className="bg-gradient-to-r from-orange-500/10 to-red-500/10 backdrop-blur-md border-y border-orange-400/20 py-8 mb-16">
           <div className="container mx-auto px-4 text-center">
@@ -310,13 +311,13 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
           </div>
         </section>
         <section id="birth-form" ref={formRef} className="container mx-auto py-16 px-4">
-          
+
           <ChartForm onSubmit={handleSubmit} initialValues={prefillValues} isSubmitting={submitting} />
           {error && (
-          <p className="mt-4 text-sm text-rose-300">
-            {error}
-          </p>
-        )}
+            <p className="mt-4 text-sm text-rose-300">
+              {error}
+            </p>
+          )}
           <DemoProfiles onSelect={handlePrefill} onNewForm={handleNewForm} />
           <ValueGrid />
           <PreviewSection wheelSrc={wheelSrc} />
@@ -324,50 +325,53 @@ export default function AstroLanding({ wheelSrc = '/karma-wheel.png' }: { wheelS
       </div>
       {/* Additional Social Proof */}
       <section className="container mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-white mb-8">Join Thousands Who've Transformed Their Lives</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: "David K.", location: "New York", quote: "This changed everything about how I approach relationships. I finally understand my patterns." },
-              { name: "Maria S.", location: "London", quote: "Found my life purpose at 45! The career guidance was spot-on and life-changing." },
-              { name: "James T.", location: "Sydney", quote: "Skeptical at first, but the accuracy was mind-blowing. Now I make all major decisions using these insights." }
-            ].map((testimonial, index) => (
-              <div key={index} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6">
-                <div className="flex items-center justify-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <blockquote className="text-gray-300 italic mb-4">
-                  "{testimonial.quote}"
-                </blockquote>
-                <cite className="text-fuchsia-300 font-medium">
-                  — {testimonial.name}, {testimonial.location}
-                </cite>
+        <div className="text-center mb-12">
+          <h3 className="text-3xl font-bold text-white mb-8">Join Thousands Who've Transformed Their Lives</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { name: "Aarya Sharma", location: "Pune, India", quote: "This website is a game-changer! My birth chart insights were so accurate and the interface is super aesthetic. It's like having a personal cosmic guide in my pocket." },
+            { name: "Rohan Patel", location: "Surat, India", quote: "Found my life purpose at 45! The career guidance was spot-on and life-changing." },
+            { name: "Priya Lalwani", location: "Sydney, Australia", quote: "Never knew Vedic astrology could be this cool. The app's design is amazing and the predictions are eerily precise. It's a must-have for anyone on a spiritual journey." },
+            { name: "Arjun Talwar", location: "New York, USA", quote: "Forget generic horoscopes. This application provides legit, personalized guidance. It helped me understand my strengths and challenges in a whole new way. Definitely worth it!" },
+            { name: "Diya Choudhury", location: "Lucknow, India", quote: "This application helped me understand my chart and my life's purpose in a way no other app has. The cosmic calendar is a lifesaver. It’s authentic and super helpful." },
+            { name: "Vishal Singh", location: "Guwahati, India", quote: "I've tried a lot of astrology websites, but this one is the real deal. The details are incredible and the explanations are easy to understand. It’s my go-to for all things spiritual." }
+          ].map((testimonial, index) => (
+            <div key={index} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6">
+              <div className="flex items-center justify-center mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
-        {/* Final CTA with Urgency */}
-        <section className="bg-gradient-to-r from-fuchsia-600/20 to-purple-600/20 backdrop-blur-md border-y border-fuchsia-400/30 py-16">
-          <div className="container mx-auto px-4 text-center">
-            <h3 className="text-4xl font-bold text-white mb-4">
-              Don't Let This Cosmic Window Close
-            </h3>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Your current planetary alignment offers unique insights available only for the next {timeLeft.hours} hours. 
-              After that, you'll have to wait months for similar cosmic clarity.
-            </p>
-            <button 
-              onClick={scrollToForm}
-              className="bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:from-fuchsia-400 hover:to-purple-500 text-white px-12 py-4 rounded-full text-xl font-bold shadow-2xl hover:shadow-fuchsia-500/25 transition-all duration-300 hover:scale-105"
-            >
-              Claim My Reading Now
-            </button>
-          </div>
-        </section>
+              <blockquote className="text-gray-300 italic mb-4">
+                "{testimonial.quote}"
+              </blockquote>
+              <cite className="text-fuchsia-300 font-medium">
+                — {testimonial.name}, {testimonial.location}
+              </cite>
+            </div>
+          ))}
+        </div>
+      </section>
+      {/* Final CTA with Urgency */}
+      <section className="bg-gradient-to-r from-fuchsia-600/20 to-purple-600/20 backdrop-blur-md border-y border-fuchsia-400/30 py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h3 className="text-4xl font-bold text-white mb-4">
+            Don't Let This Cosmic Window Close
+          </h3>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            Your current planetary alignment offers unique insights available only for the next {timeLeft.hours} hours.
+            After that, you'll have to wait months for similar cosmic clarity.
+          </p>
+          <button
+            onClick={scrollToForm}
+            className="bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:from-fuchsia-400 hover:to-purple-500 text-white px-12 py-4 rounded-full text-xl font-bold shadow-2xl hover:shadow-fuchsia-500/25 transition-all duration-300 hover:scale-105"
+          >
+            Claim My Reading Now
+          </button>
+        </div>
+      </section>
 
       {/* Sticky floating CTA, visible after 40% scroll, hidden when the form is on screen */}
       <FloatingCTA targetId="birth-form" showAfter={0.4} />
