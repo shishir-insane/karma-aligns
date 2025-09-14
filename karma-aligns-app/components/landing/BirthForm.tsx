@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Clock, Calendar, HelpCircle, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
 
-export type BirthFormValues = { 
-  name?: string; 
-  date: string; 
-  time: string; 
-  tz: string; 
-  lat: string; 
-  lon: string; 
+const s = (v: unknown) => (v == null ? '' : String(v));
+
+export type BirthFormValues = {
+  name?: string;
+  date: string;
+  time: string;
+  tz: string;
+  location: string;
+  lat?: string;
+  lon?: string;
 };
 
 interface ValidationErrors {
@@ -29,9 +32,17 @@ export default function BirthForm({
   initialValues?: BirthFormValues;
   isSubmitting?: boolean;
 }) {
-  const [v, setV] = useState<BirthFormValues>(
-    initialValues || { name:'', date:'', time:'', tz:'+05:30', lat:'', lon:'' }
-  );
+  const normalized = useMemo<BirthFormValues>(() => ({
+    name:     s(initialValues?.name),
+    date:     s(initialValues?.date ?? initialValues?.dob),
+    time:     s(initialValues?.time ?? initialValues?.tob),
+    tz:       s(initialValues?.tz),
+    location: s(initialValues?.location),
+    lat:      s(initialValues?.lat),
+    lon:      s(initialValues?.lon),
+  }), [initialValues]);
+
+  const [v, setV] = useState<BirthFormValues>(normalized);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -39,14 +50,8 @@ export default function BirthForm({
 
   // Use useEffect to handle changes to initialValues prop
   useEffect(() => {
-    if (initialValues) {
-      setV(initialValues);
-      setShowAdvanced(true); // Show advanced fields when prefilling
-    } else {
-      setV({ name:'', date:'', time:'', tz:'+05:30', lat:'', lon:'' });
-      setShowAdvanced(false);
-    }
-  }, [initialValues]);
+    setV(normalized);
+  }, [normalized]);
 
   // Real-time validation
   useEffect(() => {
@@ -83,10 +88,9 @@ export default function BirthForm({
 
   const disabled = !v.date || !v.time || !v.tz || !v.lat || !v.lon || Object.keys(errors).length > 0;
 
-  function set<K extends keyof BirthFormValues>(k: K, val: BirthFormValues[K]) {
-    setV(prev => ({ ...prev, [k]: val }));
-    setTouched(prev => ({ ...prev, [k]: true }));
-  }
+  const set = <K extends keyof BirthFormValues>(key: K) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setV((prev) => ({ ...prev, [key]: e.target.value ?? '' }));
 
   function handleBlur(field: string) {
     setTouched(prev => ({ ...prev, [field]: true }));
@@ -139,7 +143,10 @@ export default function BirthForm({
 
   return (
     <form
-      onSubmit={(e) => { e.preventDefault(); onSubmit(v); }}
+      onSubmit={(e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(v);
+      }}
       className="space-y-6 p-6"
       aria-describedby="form-help"
     >
@@ -173,7 +180,7 @@ export default function BirthForm({
             <input 
               id="dob" 
               type="date" 
-              value={v.date} 
+              value={v.date || ''}  
               onChange={e => set('date', e.target.value)}
               onBlur={() => handleBlur('date')}
               className={commonInputClasses('date')}
@@ -193,7 +200,7 @@ export default function BirthForm({
             <input 
               id="tob" 
               type="time" 
-              value={v.time} 
+              value={v.time || ''} 
               onChange={e => set('time', e.target.value)}
               onBlur={() => handleBlur('time')}
               className={commonInputClasses('time')}
@@ -257,7 +264,7 @@ export default function BirthForm({
               </label>
               <input 
                 id="tz" 
-                value={v.tz} 
+                value={v.tz || ''}   
                 onChange={e => set('tz', e.target.value)}
                 onBlur={() => handleBlur('tz')}
                 className={commonInputClasses('tz')}
@@ -280,7 +287,7 @@ export default function BirthForm({
                 </label>
                 <input 
                   id="lat" 
-                  value={v.lat} 
+                  value={v.lat || ''} 
                   onChange={e => set('lat', e.target.value)}
                   onBlur={() => handleBlur('lat')}
                   className={commonInputClasses('lat')}
@@ -301,7 +308,7 @@ export default function BirthForm({
                 </label>
                 <input 
                   id="lon" 
-                  value={v.lon} 
+                  value={v.lon || ''}
                   onChange={e => set('lon', e.target.value)}
                   onBlur={() => handleBlur('lon')}
                   className={commonInputClasses('lon')}
