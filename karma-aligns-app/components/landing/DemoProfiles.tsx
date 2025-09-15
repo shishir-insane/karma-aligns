@@ -11,14 +11,14 @@ interface DemoProfilesProps {
 export default function DemoProfiles({ onSelect, onNewForm }: DemoProfilesProps) {
   const samples = [
     {
-      name: 'Nikola Tesla',
+      name: 'Sage No. 404',
       icon: <Zap className="w-4 h-4" />,
-      data: { name: 'Nikola Tesla', date: '1856-07-10', time: '00:00', tz: '+01:00', lat: '44.8125', lon: '20.4612' }
+      data: { name: 'Sage No. 404', date: '1984-09-24', time: '17:30', tz: '+05:30', lat: 26.7606, lon: 83.3732 }
     },
     {
       name: 'Marie Curie',
       icon: <Brain className="w-4 h-4" />,
-      data: { name:'Marie Curie', dob:'1867-11-07', tob:'12:00', tz:'+01:00', lat:52.2297, lon:21.0122 }
+      data: { name: 'Marie Curie', dob: '1867-11-07', tob: '12:00', tz: '+01:00', lat: 52.2297, lon: 21.0122 }
     },
     {
       name: 'Albert Einstein',
