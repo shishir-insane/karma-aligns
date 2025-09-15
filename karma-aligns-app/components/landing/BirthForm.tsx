@@ -151,7 +151,7 @@ export default function BirthForm({
       aria-describedby="form-help"
     >
       {/* Basic Information */}
-      <div className="space-y-4">
+      <div className="space-y-4" suppressHydrationWarning>
         <h3 className="text-lg font-semibold text-white/90 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-fuchsia-400" />
           Basic Information
@@ -216,7 +216,7 @@ export default function BirthForm({
       </div>
 
       {/* Advanced Settings Toggle */}
-      <div className="border-t border-slate-600/30 pt-6">
+      <div className="border-t border-slate-600/30 pt-6" suppressHydrationWarning> 
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
