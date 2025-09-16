@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-/* ----------------------------------------------
+/* =========================================================
    Types / Constants
----------------------------------------------- */
+========================================================= */
 type NormLike = {
   shadbala?: Array<{ pillar?: string; name?: string; key?: string; value?: number; score?: number }>;
 };
@@ -14,10 +14,10 @@ const PILLAR_ORDER: PillarKey[] = ["sthana", "dig", "kala", "cheshta", "naisargi
 
 const PILLAR_META: Record<PillarKey, {
   emoji: string;
-  title: string;                 // friendly label
+  title: string;                 // Gen-Z friendly label
   hint: string;                  // quick meaning
   story: (v:number)=>string;     // micro-story by value
-  sname: string;                 // Sanskrit name shown in ? tooltip
+  sname: string;                 // Sanskrit name for ? tooltip
   sdesc: string;                 // short classical description
 }> = {
   sthana:     { emoji: "🏛️", title: "Placement Power",   hint: "Sign/house context. Feels ‘at home’ = smoother vibes.", sname:"Sthāna Bala", sdesc:"Strength from sign & house dignity (exaltation, own sign, etc.).", story: v => v>=0.7? "Placed like a VIP—flows naturally." : v>=0.55? "Decent footing." : v>=0.4? "Not comfy; needs context." : "Out of place; tread soft." },
@@ -37,17 +37,18 @@ const PLANET_ORDER = ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn","
 /* Absolute scale (your spec) */
 function badgeAbsolute(value: number) {
   const v = clamp01(value);
-  if (v >= 0.70) return { text: "Very strong • Boss Mode",   cls: "border-emerald-400/25 bg-emerald-300/10 text-emerald-300", spin:true };
-  if (v >= 0.55) return { text: "Average to good • Holding Steady", cls: "border-violet-400/25 bg-violet-300/10 text-violet-300", spin:false };
-  if (v >= 0.40) return { text: "Weak • Needs a Boost",       cls: "border-amber-400/25 bg-amber-300/10 text-amber-300", spin:false };
-  return              { text: "Very weak • Needs Support",    cls: "border-rose-400/25 bg-rose-300/10 text-rose-300", spin:false };
+  if (v >= 0.70) return { text: "Very strong • Boss Mode",   cls: "border-emerald-400/25 bg-emerald-300/10 text-emerald-300" };
+  if (v >= 0.55) return { text: "Average to good • Holding Steady", cls: "border-violet-400/25 bg-violet-300/10 text-violet-300" };
+  if (v >= 0.40) return { text: "Weak • Needs a Boost",       cls: "border-amber-400/25 bg-amber-300/10 text-amber-300" };
+  return              { text: "Very weak • Needs Support",    cls: "border-rose-400/25 bg-rose-300/10 text-rose-300" };
 }
 
-/* ----------------------------------------------
+/* =========================================================
    Utils
----------------------------------------------- */
+========================================================= */
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 const fmt1 = (n: number) => (isFinite(n) ? n.toFixed(2) : "—");
+const fmt0 = (n: number) => (isFinite(n) ? Math.round(n).toString() : "—");
 const titleCase = (s: string) =>
   (s || "")
     .replace(/[_\-]+/g, " ")
@@ -56,16 +57,80 @@ const titleCase = (s: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ----------------------------------------------
-   Data Extraction
----------------------------------------------- */
+/* =========================================================
+   Data Extraction (NEW shape + backward compatible)
+   - NEW:  data.shadbala.components.normalized[planet][pillar]
+           data.shadbala.components.virupa_rupa[planet].components.{rupa|virupa}[pillar]
+           data.shadbala.components.virupa_rupa[planet].totals.{rupa|virupa}
+           data.shadbala.totals.normalized[planet]
+   - OLD:  data.shadbala.components[planet][pillar]
+           data.shadbala.total[planet]
+========================================================= */
 function extractShadbala(data?: any, norm?: NormLike) {
   const raw = data?.shadbala ?? data?.shad_bala ?? null;
 
   let components: Record<string, Partial<Record<PillarKey, number>>> | null = null;
   let totals: Record<string, number> | null = null;
 
-  if (raw?.components && typeof raw.components === "object") {
+  // classical (optional) maps
+  let classicalComponents: Record<string, Partial<Record<PillarKey, { rupa?: number; virupa?: number }>>> = {};
+  let classicalTotals: Record<string, { rupa?: number; virupa?: number }> = {};
+
+  // --------- prefer NEW normalized totals/components ----------
+  const newComp = raw?.components?.normalized;
+  const newTotals = raw?.totals?.normalized;
+
+  if (newComp && typeof newComp === "object") {
+    components = {};
+    for (const [planet, pillars] of Object.entries(newComp as Record<string, any>)) {
+      const entry: Partial<Record<PillarKey, number>> = {};
+      for (const k of PILLAR_ORDER) {
+        const v = Number((pillars as any)[k]);
+        if (!isNaN(v)) entry[k] = clamp01(v);
+      }
+      components[planet] = entry;
+    }
+  }
+
+  if (newTotals && typeof newTotals === "object") {
+    totals = {};
+    for (const [planet, v] of Object.entries(newTotals as Record<string, any>)) {
+      const n = Number(v);
+      if (!isNaN(n)) totals[planet] = clamp01(n);
+    }
+  }
+
+  // --------- classical: virupa_rupa, if present ----------
+  const vr = raw?.components?.virupa_rupa;
+  if (vr && typeof vr === "object") {
+    for (const [planet, block] of Object.entries(vr as Record<string, any>)) {
+      const comp = (block as any)?.components ?? {};
+      const rupa = comp?.rupa ?? {};
+      const virupa = comp?.virupa ?? {};
+      const entry: Partial<Record<PillarKey, { rupa?: number; virupa?: number }>> = {};
+      for (const k of PILLAR_ORDER) {
+        const r = Number(rupa?.[k]);
+        const v = Number(virupa?.[k]);
+        entry[k] = {
+          ...(isFinite(r) ? { rupa: r } : {}),
+          ...(isFinite(v) ? { virupa: v } : {}),
+        };
+      }
+      classicalComponents[planet] = entry;
+
+      const totalsBlock = (block as any)?.totals ?? {};
+      const tr = Number(totalsBlock?.rupa);
+      const tv = Number(totalsBlock?.virupa);
+      classicalTotals[planet] = {
+        ...(isFinite(tr) ? { rupa: tr } : {}),
+        ...(isFinite(tv) ? { virupa: tv } : {}),
+      };
+    }
+  }
+
+  // --------- fallback to OLD shape ----------
+  if (!components && raw?.components && typeof raw.components === "object") {
+    // old shape: raw.components[planet][pillar]
     components = {};
     for (const [planet, pillars] of Object.entries(raw.components as Record<string, any>)) {
       const entry: Partial<Record<PillarKey, number>> = {};
@@ -76,7 +141,9 @@ function extractShadbala(data?: any, norm?: NormLike) {
       components[planet] = entry;
     }
   }
-  if (raw?.total && typeof raw.total === "object") {
+
+  if (!totals && raw?.total && typeof raw.total === "object") {
+    // old shape: raw.total[planet] normalized
     totals = {};
     for (const [planet, v] of Object.entries(raw.total as Record<string, any>)) {
       const n = Number(v);
@@ -84,7 +151,7 @@ function extractShadbala(data?: any, norm?: NormLike) {
     }
   }
 
-  // Fallback when per-planet missing: show pillar summary from normalized array
+  // Fallback when per-planet not present: use normalized array from `norm`
   let pillarSummary: Array<{ key: PillarKey; label: string; value: number }> = [];
   if (!components && Array.isArray(norm?.shadbala) && norm!.shadbala!.length) {
     pillarSummary = norm!.shadbala!.map((x: any) => {
@@ -101,12 +168,12 @@ function extractShadbala(data?: any, norm?: NormLike) {
     });
   }
 
-  return { components, totals, pillarSummary };
+  return { components, totals, pillarSummary, classicalComponents, classicalTotals };
 }
 
-/* ----------------------------------------------
+/* =========================================================
    Visuals: Radar Chart (SVG)
----------------------------------------------- */
+========================================================= */
 function RadarChart({ values, size = 160 }: { values: number[]; size?: number }) {
   const pad = 18;
   const cx = size / 2, cy = size / 2;
@@ -139,9 +206,9 @@ function RadarChart({ values, size = 160 }: { values: number[]; size?: number })
   );
 }
 
-/* ----------------------------------------------
-   Click-to-open Tooltip (only one open)
----------------------------------------------- */
+/* =========================================================
+   Click-away hook for the ? tooltip
+========================================================= */
 function useClickAway<T extends HTMLElement>(onAway: () => void) {
   const ref = useRef<T | null>(null);
   useEffect(() => {
@@ -155,19 +222,23 @@ function useClickAway<T extends HTMLElement>(onAway: () => void) {
   return ref;
 }
 
-/* ----------------------------------------------
+/* =========================================================
    UI Bits
----------------------------------------------- */
+========================================================= */
 function PillarRow({
   planet,
   k,
   v,
+  classical,
+  showClassic,
   openTipId,
   setOpenTipId
 }: {
   planet: string;
   k: PillarKey;
   v: number;
+  classical?: { rupa?: number; virupa?: number };
+  showClassic: boolean;
   openTipId: string | null;
   setOpenTipId: (id: string | null) => void;
 }) {
@@ -181,12 +252,13 @@ function PillarRow({
 
   return (
     <div className="flex items-start gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-      <div className={`text-base leading-none ${b.text.startsWith('Very strong') ? 'animate-pulse' : ''}`}>{meta.emoji}</div>
+      <div className="text-base leading-none">{meta.emoji}</div>
+
       <div className="flex-1">
-        <div className="flex items-center justify-between gap-2">
+        {/* Header row: wraps on mobile so badge goes to next line */}
+        <div className="flex flex-wrap items-center gap-2">
           <div className="text-sm font-medium flex items-center gap-2">
             {meta.title}
-            {/* ? tooltip button (click-to-toggle, only one open) */}
             <div ref={ref} className="relative inline-block">
               <button
                 type="button"
@@ -203,19 +275,34 @@ function PillarRow({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className={`text-[10px] px-1.5 py-0.5 rounded-full border ${b.cls}`}>{b.text}</div>
-            <div className="text-xs text-white/70">{fmt1(v)}</div>
+
+          {/* Badge + score go full-width on mobile to avoid overflow */}
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+            <div className={`text-[10px] px-2 py-0.5 rounded-full border ${b.cls} whitespace-normal leading-tight text-center`}>
+              {b.text}
+            </div>
+            <div className="text-xs text-white/70 ml-auto sm:ml-0">{fmt1(v)}</div>
           </div>
         </div>
+
+        {/* Bar */}
         <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-pink-400 to-violet-500 transition-[width] duration-700 ease-out"
             style={{ width: `${clamp01(v) * 100}%` }}
           />
         </div>
+
+        {/* Hint + story + (optional classical) */}
         <div className="mt-1.5 text-[11px] leading-relaxed text-white/70">
           {meta.hint} <span className="text-white/60">({meta.story(v)})</span>
+          {showClassic && (classical?.rupa != null || classical?.virupa != null) && (
+            <span className="ml-2 text-white/50">
+              — <span className="italic">{fmt1(classical?.rupa ?? NaN)} rūpa</span>
+              {" "}<span className="opacity-70">•</span>{" "}
+              <span className="italic">{fmt0(classical?.virupa ?? NaN)} virūpa</span>
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -223,7 +310,6 @@ function PillarRow({
 }
 
 function StrengthRing({ value }: { value: number }) {
-  // ring gets thicker with strength, subtle pulse when very strong
   const v = clamp01(value);
   const deg = Math.round(v * 360);
   const inset = Math.max(6, 14 - Math.round(v * 10)); // thicker when strong
@@ -232,13 +318,10 @@ function StrengthRing({ value }: { value: number }) {
     <div className={`relative w-24 h-24 ${pulse}`}>
       <div
         className="absolute inset-0 rounded-full"
-        style={{
-          backgroundImage: `conic-gradient(#a78bfa ${deg}deg, rgba(255,255,255,0.06) ${deg}deg)`
-        }}
+        style={{ backgroundImage: `conic-gradient(#a78bfa ${deg}deg, rgba(255,255,255,0.06) ${deg}deg)` }}
       />
       <div className="absolute inset-0 rounded-full bg-black/10 blur-md" />
-      <div className="absolute rounded-full bg-white/5 border border-white/10 flex items-center justify-center"
-           style={{ inset: inset }}>
+      <div className="absolute rounded-full bg-white/5 border border-white/10 flex items-center justify-center" style={{ inset }}>
         <div className="text-sm font-semibold">{fmt1(v)}</div>
       </div>
     </div>
@@ -249,12 +332,16 @@ function PlanetCard({
   name,
   pillars,
   total,
+  classicalPlanet,
+  showClassic,
   openTipId,
   setOpenTipId
 }: {
   name: string;
   pillars: Partial<Record<PillarKey, number>>;
   total?: number;
+  classicalPlanet?: { totals?: { rupa?: number; virupa?: number }, comps?: Partial<Record<PillarKey, { rupa?: number; virupa?: number }>> };
+  showClassic: boolean;
   openTipId: string | null;
   setOpenTipId: (id: string | null) => void;
 }) {
@@ -269,11 +356,14 @@ function PlanetCard({
     : totalSafe >= 0.4 ? `${name} is muted — manage expectations here.`
     : `${name} is low impact rn — don’t overindex decisions here.`;
 
+  const totR = classicalPlanet?.totals?.rupa;
+  const totV = classicalPlanet?.totals?.virupa;
+
   return (
     <div className="snap-center group rounded-2xl border border-white/10 bg-white/5 p-5 transition-all hover:bg-white/8 hover:shadow-[0_10px_30px_rgba(147,51,234,.25)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`text-2xl ${b.spin ? '' : ''}`}>{PLANET_EMOJI[name] ?? "✨"}</div>
+          <div className="text-2xl">{PLANET_EMOJI[name] ?? "✨"}</div>
           <div>
             <div className="text-base font-semibold">{name}</div>
             <div className="text-[11px] text-white/60">Shadbala total</div>
@@ -291,7 +381,14 @@ function PlanetCard({
         </div>
       </div>
 
-      <p className="mt-3 text-[13px] text-white/80">{totalStory}</p>
+      <p className="mt-3 text-[13px] text-white/80">
+        {totalStory}
+        {showClassic && (totR != null || totV != null) && (
+          <span className="block text-[12px] text-white/60 mt-1">
+            Classical: <span className="italic">{fmt1(totR ?? NaN)} Rūpas</span> (<span className="italic">{fmt0(totV ?? NaN)} Virūpas</span>)
+          </span>
+        )}
+      </p>
 
       <button
         onClick={() => setOpen(o => !o)}
@@ -310,6 +407,8 @@ function PlanetCard({
                 planet={name}
                 k={k}
                 v={pillars[k]!}
+                classical={classicalPlanet?.comps?.[k]}
+                showClassic={showClassic}
                 openTipId={openTipId}
                 setOpenTipId={setOpenTipId}
               />
@@ -321,7 +420,7 @@ function PlanetCard({
   );
 }
 
-/* Inline FAQ */
+/* Inline FAQ (unchanged) */
 function InlineFAQ() {
   return (
     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-[13px]">
@@ -352,9 +451,9 @@ function InlineFAQ() {
   );
 }
 
-/* ----------------------------------------------
-   Comparison Mode (UX actionable)
----------------------------------------------- */
+/* =========================================================
+   Comparison Mode (unchanged)
+========================================================= */
 function ComparePanel({
   planets,
   components,
@@ -452,9 +551,62 @@ function ComparePanel({
   );
 }
 
-/* ----------------------------------------------
-   Main Component
----------------------------------------------- */
+/* =========================================================
+   Collapsible + toggle helpers (persisted + animated)
+========================================================= */
+function usePersistentToggle(key: string, initial = true) {
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return initial;
+    const v = window.localStorage.getItem(key);
+    return v == null ? initial : v === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(key, open ? "1" : "0");
+    }
+  }, [key, open]);
+  return { open, setOpen };
+}
+
+function usePersistentFlag(key: string, initial = false) {
+  const [flag, setFlag] = useState<boolean>(() => {
+    if (typeof window === "undefined") return initial;
+    const v = window.localStorage.getItem(key);
+    return v == null ? initial : v === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(key, flag ? "1" : "0");
+    }
+  }, [key, flag]);
+  return { flag, setFlag };
+}
+
+function Collapsible({ open, children }: { open: boolean; children: React.ReactNode; }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [h, setH] = useState<number | "auto">(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setH(el.scrollHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div
+      className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${open ? "opacity-100" : "opacity-90"}`}
+      style={{ maxHeight: open ? (typeof h === "number" ? h : 9999) : 0 }}
+    >
+      <div ref={ref}>{children}</div>
+    </div>
+  );
+}
+
+/* =========================================================
+   Main Component (collapsible + classical toggle)
+========================================================= */
 export default function Shadbala({
   data,
   norm
@@ -462,11 +614,20 @@ export default function Shadbala({
   data?: any;
   norm?: NormLike;
 }) {
-  const { components, totals, pillarSummary } = useMemo(() => extractShadbala(data, norm), [data, norm]);
+  const { components, totals, pillarSummary, classicalComponents, classicalTotals } = useMemo(
+    () => extractShadbala(data, norm),
+    [data, norm]
+  );
   const hasPlanetCards = components && Object.keys(components).length;
 
-  // one open tooltip at a time across the whole Shadbala section
+  // one open tooltip at a time across section
   const [openTipId, setOpenTipId] = useState<string | null>(null);
+
+  // collapsible state (persisted)
+  const { open, setOpen } = usePersistentToggle("ka:collapse:shadbala", true);
+
+  // NEW: classical toggle (persisted) — OFF by default
+  const { flag: showClassic, setFlag: setShowClassic } = usePersistentFlag("ka:shadbala:classic", false);
 
   if (!hasPlanetCards && !pillarSummary.length) return null;
 
@@ -475,86 +636,151 @@ export default function Shadbala({
     ...Object.keys(components!).filter(p => !PLANET_ORDER.includes(p))
   ] : [];
 
-  return (
-    <section id="shadbala" className="mt-6">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Shadbala (Sixfold Strength)</h2>
-      </div>
-
-      {hasPlanetCards ? (
-        <>
-          {/* Swipe on mobile; grid on desktop */}
-          <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar">
-            <div className="flex gap-4">
-              {planetList.map((planet) => (
-                <div key={planet} className="min-w-[90%]">
-                  <PlanetCard
-                    name={planet}
-                    pillars={components![planet]}
-                    total={totals?.[planet]}
-                    openTipId={openTipId}
-                    setOpenTipId={setOpenTipId}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {planetList.map((planet) => (
+  // Build section body
+  const body = hasPlanetCards ? (
+    <>
+      {/* Swipe on mobile; grid on desktop */}
+      <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar">
+        <div className="flex gap-4">
+          {planetList.map((planet) => (
+            <div key={planet} className="min-w-[90%]">
               <PlanetCard
-                key={planet}
                 name={planet}
                 pillars={components![planet]}
                 total={totals?.[planet]}
+                classicalPlanet={{
+                  totals: classicalTotals?.[planet],
+                  comps: classicalComponents?.[planet]
+                }}
+                showClassic={showClassic}
                 openTipId={openTipId}
                 setOpenTipId={setOpenTipId}
               />
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          {/* Comparison Mode */}
-          <ComparePanel planets={planetList} components={components!} totals={totals ?? null} />
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
+        {planetList.map((planet) => (
+          <PlanetCard
+            key={planet}
+            name={planet}
+            pillars={components![planet]}
+            total={totals?.[planet]}
+            classicalPlanet={{
+              totals: classicalTotals?.[planet],
+              comps: classicalComponents?.[planet]
+            }}
+            showClassic={showClassic}
+            openTipId={openTipId}
+            setOpenTipId={setOpenTipId}
+          />
+        ))}
+      </div>
 
-          <InlineFAQ />
-        </>
-      ) : (
-        // Fallback: just six pillars overall
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pillarSummary.map((p, i) => {
-            const b = badgeAbsolute(p.value);
-            return (
-              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2">
-                    <span className={`text-lg ${b.text.startsWith('Very strong') ? 'animate-pulse' : ''}`}>{PILLAR_META[p.key].emoji}</span>
-                    <div>
-                      <div className="font-semibold">{PILLAR_META[p.key].title}</div>
-                      <div className="text-[11px] text-white/60">{p.label}</div>
-                    </div>
-                  </div>
-                  <div className={`text-[11px] px-2 py-0.5 rounded-full border ${b.cls}`}>{b.text}</div>
-                </div>
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-xs text-white/60 mb-1">
-                    <span>Score</span>
-                    <span className="text-white/80 font-medium">{fmt1(p.value)}</span>
-                  </div>
-                  <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-pink-400 to-violet-500 transition-[width] duration-700 ease-out"
-                      style={{ width: `${clamp01(p.value) * 100}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-[11px] text-white/70">
-                    {PILLAR_META[p.key].hint} <span className="text-white/60">({PILLAR_META[p.key].story(p.value)})</span>
-                  </div>
+      <ComparePanel
+        planets={planetList}
+        components={components!}
+        totals={totals ?? null}
+      />
+
+      <InlineFAQ />
+    </>
+  ) : (
+    // Fallback: just six pillars overall (no classical here)
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {pillarSummary.map((p, i) => {
+        const b = badgeAbsolute(p.value);
+        return (
+          <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <span className="text-lg">{PILLAR_META[p.key].emoji}</span>
+                <div>
+                  <div className="font-semibold">{PILLAR_META[p.key].title}</div>
+                  <div className="text-[11px] text-white/60">{p.label}</div>
                 </div>
               </div>
-            );
-          })}
+              <div className={`text-[11px] px-2 py-0.5 rounded-full border ${b.cls}`}>{b.text}</div>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs text-white/60 mb-1">
+                <span>Score</span>
+                <span className="text-white/80 font-medium">{fmt1(p.value)}</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-pink-400 to-violet-500 transition-[width] duration-700 ease-out"
+                  style={{ width: `${clamp01(p.value) * 100}%` }}
+                />
+              </div>
+              <div className="mt-2 text-[11px] text-white/70">
+                {PILLAR_META[p.key].hint} <span className="text-white/60">({PILLAR_META[p.key].story(p.value)})</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <section id="shadbala" className="mt-6">
+      {/* Collapsible header + Classical toggle */}
+      <div className="flex items-center justify-between mb-3 gap-3">
+        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Shadbala (Sixfold Strength)</h2>
+
+        <div className="flex items-center gap-2">
+          {/* Classical values toggle (doesn't change layout, only reveals text) */}
+          <button
+            type="button"
+            onClick={() => setShowClassic(!showClassic)}
+            className={`hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10 ${
+              showClassic ? "bg-white/10" : "bg-white/5"
+            }`}
+            aria-pressed={showClassic}
+            title="Show Classical Rūpa & Virūpa values"
+          >
+            Classical values
+            <span className={`inline-block w-8 h-4 rounded-full bg-white/10 relative`}>
+              <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${showClassic ? "translate-x-4" : ""}`} />
+            </span>
+          </button>
+
+          {/* Collapsible control */}
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"
+          >
+            <span>{open ? "Hide" : "Show"}</span>
+            <span className={`inline-block transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▾</span>
+          </button>
         </div>
-      )}
+      </div>
+
+      {/* Mobile: classical toggle below header for reachability */}
+      <div className="sm:hidden mb-2">
+        <button
+          type="button"
+          onClick={() => setShowClassic(!showClassic)}
+          className={`inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-xs hover:bg-white/10 ${
+            showClassic ? "bg-white/10" : "bg-white/5"
+          }`}
+          aria-pressed={showClassic}
+          title="Show Classical Rūpa & Virūpa values"
+        >
+          Classical values
+          <span className={`inline-block w-8 h-4 rounded-full bg-white/10 relative`}>
+            <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${showClassic ? "translate-x-4" : ""}`} />
+          </span>
+        </button>
+      </div>
+
+      {/* Animated collapsible content */}
+      <Collapsible open={open}>{body}</Collapsible>
     </section>
   );
 }

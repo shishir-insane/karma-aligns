@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import Dict, List, Tuple, Optional
-from math import isfinite
+from typing import Dict, List, Tuple, Optional, Any
 from .swe_utils import sign_index
 from .symbols import SIGN_NAMES
 
@@ -44,6 +43,25 @@ MALEFICS = {"Saturn","Mars","Rahu","Ketu","Sun"}
 
 # Weights (sum ≈ 1.0); tunable
 W = {"naisargika":0.20, "sthana":0.25, "dig":0.15, "kala":0.15, "cheshta":0.15, "drik":0.10}
+
+# Commonly referenced (capped) maxima for each bala component in VIRUPAS.
+DEFAULT_COMPONENT_MAX_VIRUPA: Dict[str, int] = {
+    "sthana": 228,    # Sthana Bala
+    "dig": 60,        # Dig Bala
+    "kala": 225,      # Kala Bala
+    "cheshta": 60,    # Cheshta Bala
+    "drik": 90,       # Drik Bala (cap)
+    # "naisargika" handled per-planet below
+}
+
+# Naisargika Bala maxima per planet in VIRUPAS (classical table; Rahu/Ketu configurable)
+DEFAULT_NAISARGIKA_MAX_VIRUPA: Dict[str, int] = {
+    "Sun": 60, "Moon": 51, "Venus": 43, "Jupiter": 34,
+    "Mercury": 26, "Mars": 17, "Saturn": 9,
+    "Rahu": 30, "Ketu": 30,
+}
+
+# DEFAULT_NAISARGIKA_MAX_VIRUPA.update({"Rahu": 0, "Ketu": 0})
 
 # ---- helpers --------------------------------------------------------------
 def _sign_name(lon: float) -> str:
@@ -133,8 +151,91 @@ def _drikbala(planet: str, planets: Dict[str, Dict]) -> float:
     score = max(-5, min(5, score))
     return (score + 5)/10.0
 
+def _virupa_to_rupa(virupa: float) -> float:
+    """Convert Virupa to Rupa (1 Rupa = 60 Virupas)."""
+    return virupa / 60.0
+
+def _component_max_virupa(planet: str, component: str,
+                          overrides: Optional[Dict[str, Any]] = None) -> int:
+    """Get max virupa for a given component (planet-specific for naisargika)."""
+    overrides = overrides or {}
+    if component == "naisargika":
+        tbl = {**DEFAULT_NAISARGIKA_MAX_VIRUPA, **overrides.get("naisargika_max", {})}
+        return int(tbl.get(planet, 30))
+    per_component = overrides.get("component_max", {})
+    return int(per_component.get(component, DEFAULT_COMPONENT_MAX_VIRUPA.get(component, 60)))
+
+def convert_components_to_virupa(components: Dict[str, float], planet: str,
+                                 overrides: Optional[Dict[str, Any]] = None
+                                ) -> Tuple[Dict[str, float], float]:
+    """
+    Convert a planet's normalized 0..1 component fractions into VIRUPA contributions,
+    using component-specific maxima. Returns (per_component_virupa, total_virupa).
+    """
+    virupas = {}
+    total = 0.0
+    for comp, frac in components.items():
+        max_v = _component_max_virupa(planet, comp, overrides)
+        f = min(max(frac, 0.0), 1.0)
+        v = f * max_v
+        virupas[comp] = v
+        total += v
+    return virupas, total
+
+def convert_shadbala_to_rupas(data: Dict[str, Any],
+                              overrides: Optional[Dict[str, Any]] = None
+                             ) -> Dict[str, Any]:
+    """
+    Input:
+      {
+        "components": {
+           "Planet": {"sthana": 0..1, "dig": 0..1, "kala": 0..1,
+                      "cheshta": 0..1, "drik": 0..1, "naisargika": 0..1},
+           ...
+        }
+      }
+    Output:
+      {
+        "planets": {
+          "Planet": {
+            "components": {"virupa": {...}, "rupa": {...}},
+            "totals": {"virupa": X, "rupa": Y}
+          }, ...
+        },
+        "summary": {"ranking_by_rupa": [("Planet", rupa_total), ...]}
+      }
+    """
+    components: Dict[str, Dict[str, float]] = data.get("components", {})
+    result = {"planets": {}, "summary": {}}
+    ranking = []
+
+    for planet, comp_map in components.items():
+        virupa_map, total_virupa = convert_components_to_virupa(comp_map, planet, overrides)
+        rupa_map = {k: _virupa_to_rupa(v) for k, v in virupa_map.items()}
+        total_rupa = _virupa_to_rupa(total_virupa)
+
+        result["planets"][planet] = {
+            "components": {"virupa": virupa_map, "rupa": rupa_map},
+            "totals": {"virupa": total_virupa, "rupa": total_rupa},
+        }
+        ranking.append((planet, total_rupa))
+
+    ranking.sort(key=lambda x: x[1], reverse=True)
+    result["summary"]["ranking_by_rupa"] = ranking
+    return result
+
+def strength_tier_from_rupa(rupa: float) -> str:
+    if rupa >= 150:
+        return "very strong (150+ Rupas)"
+    if rupa >= 100:
+        return "strong (100–149 Rupas)"
+    if rupa >= 60:
+        return "functional (60–99 Rupas)"
+    return "weak (<60 Rupas)"
+
+
 # ---- main ----------------------------------------------------------------
-def compute_shadbala(
+def _compute_shadbala_normalized(
     planets: Dict[str, Dict],
     asc_idx: int,
     chalit_houses: List[List[str]],
@@ -168,3 +269,60 @@ def compute_shadbala(
         total[p] = max(0.0, min(1.0, val))
 
     return {"total": total, "components": comps}
+
+def compute_shadbala(
+    *args,
+    return_scale: str = "both",      # "normalized" | "rupas" | "both"
+    overrides: Optional[Dict[str, Any]] = None,
+    **kwargs
+) -> dict:
+    """
+    Computes Shadbala and returns either:
+      - normalized (0..1) only,
+      - classical Virupa/Rupa only,
+      - both (default).
+
+    'overrides' can adjust maxima (component and naisargika) if you want a different table.
+    """
+    # 1) Get your existing normalized output
+    normalized = _compute_shadbala_normalized(*args, **kwargs)
+
+    if return_scale == "normalized":
+        return normalized
+
+    # 2) Convert normalized components -> Virupa/Rupa
+    # Expecting normalized["components"] to be {planet: {component: fraction}}
+    comp = {"components": normalized["components"]}
+    converted = convert_shadbala_to_rupas(comp, overrides=overrides)
+
+    # 3) Build classical totals
+    rupa_totals   = {p: converted["planets"][p]["totals"]["rupa"]   for p in converted["planets"]}
+    virupa_totals = {p: converted["planets"][p]["totals"]["virupa"] for p in converted["planets"]}
+    tiers         = {p: strength_tier_from_rupa(rupa_totals[p])     for p in converted["planets"]}
+
+    if return_scale == "rupas":
+        return {
+            "components": converted["planets"],   # includes per-component virupa & rupa
+            "totals": {
+                "virupa": virupa_totals,
+                "rupa": rupa_totals,
+                "tier": tiers,
+            },
+            "summary": converted["summary"],       # ranking_by_rupa
+        }
+
+    # 4) Default: return BOTH (normalized + classical), keeping your legacy totals intact
+    return {
+        "components": {
+            "normalized": normalized["components"],    # same as today
+            "virupa_rupa": converted["planets"],       # per-component virupa & rupa
+        },
+        "totals": {
+            "normalized": normalized.get("total") or normalized.get("totals"),
+            "virupa": virupa_totals,
+            "rupa": rupa_totals,
+            "tier": tiers,
+        },
+        "summary": converted["summary"],
+    }
+
