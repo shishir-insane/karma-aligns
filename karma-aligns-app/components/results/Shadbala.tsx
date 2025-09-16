@@ -14,11 +14,11 @@ const PILLAR_ORDER: PillarKey[] = ["sthana", "dig", "kala", "cheshta", "naisargi
 
 const PILLAR_META: Record<PillarKey, {
   emoji: string;
-  title: string;                 // Gen-Z friendly label
-  hint: string;                  // quick meaning
-  story: (v:number)=>string;     // micro-story by value
-  sname: string;                 // Sanskrit name for ? tooltip
-  sdesc: string;                 // short classical description
+  title: string;
+  hint: string;
+  story: (v:number)=>string;
+  sname: string;
+  sdesc: string;
 }> = {
   sthana:     { emoji: "🏛️", title: "Placement Power",   hint: "Sign/house context. Feels ‘at home’ = smoother vibes.", sname:"Sthāna Bala", sdesc:"Strength from sign & house dignity (exaltation, own sign, etc.).", story: v => v>=0.7? "Placed like a VIP—flows naturally." : v>=0.55? "Decent footing." : v>=0.4? "Not comfy; needs context." : "Out of place; tread soft." },
   dig:        { emoji: "🧭", title: "Directional Power",  hint: "Angles/visibility. Shows up where people notice.",     sname:"Dig Bala",    sdesc:"Strength by direction/angles (Asc/MC etc.).",              story: v => v>=0.7? "Front-row presence." : v>=0.55? "Can get seen when needed." : v>=0.4? "Low stage time." : "Backstage; not visible." },
@@ -34,18 +34,35 @@ const PLANET_EMOJI: Record<string, string> = {
 };
 const PLANET_ORDER = ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Rahu","Ketu"];
 
-/* Absolute scale (your spec) */
+/* =========================================================
+   Helpers / Scales
+========================================================= */
+
+/* Absolute scale (adds isBoss) */
 function badgeAbsolute(value: number) {
   const v = clamp01(value);
-  if (v >= 0.70) return { text: "Very strong • Boss Mode",   cls: "border-emerald-400/25 bg-emerald-300/10 text-emerald-300" };
-  if (v >= 0.55) return { text: "Average to good • Holding Steady", cls: "border-violet-400/25 bg-violet-300/10 text-violet-300" };
-  if (v >= 0.40) return { text: "Weak • Needs a Boost",       cls: "border-amber-400/25 bg-amber-300/10 text-amber-300" };
-  return              { text: "Very weak • Needs Support",    cls: "border-rose-400/25 bg-rose-300/10 text-rose-300" };
+  if (v >= 0.70) return {
+    text: "Very strong • Boss Mode",
+    cls: "border-emerald-400/25 bg-emerald-300/10 text-emerald-300",
+    isBoss: true
+  };
+  if (v >= 0.55) return {
+    text: "Average to good • Holding Steady",
+    cls: "border-violet-400/25 bg-violet-300/10 text-violet-300",
+    isBoss: false
+  };
+  if (v >= 0.40) return {
+    text: "Weak • Needs a Boost",
+    cls: "border-amber-400/25 bg-amber-300/10 text-amber-300",
+    isBoss: false
+  };
+  return {
+    text: "Very weak • Needs Support",
+    cls: "border-rose-400/25 bg-rose-300/10 text-rose-300",
+    isBoss: false
+  };
 }
 
-/* =========================================================
-   Utils
-========================================================= */
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 const fmt1 = (n: number) => (isFinite(n) ? n.toFixed(2) : "—");
 const fmt0 = (n: number) => (isFinite(n) ? Math.round(n).toString() : "—");
@@ -57,14 +74,42 @@ const titleCase = (s: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
+function levelFromValue(v: number) {
+  const n = clamp01(v);
+  if (n >= 0.85) return 5;
+  if (n >= 0.70) return 4;
+  if (n >= 0.55) return 3;
+  if (n >= 0.40) return 2;
+  return 1;
+}
+
+function useInView<T extends HTMLElement>(opts?: IntersectionObserverInit) {
+  const ref = useRef<T | null>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), opts ?? { threshold: 0.3 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [opts]);
+  return { ref, inView };
+}
+
+/* One-time nudge pill */
+function useOneTimeNudge(key: string) {
+  const [show, setShow] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(key) !== "1";
+  });
+  const dismiss = () => {
+    setShow(false);
+    if (typeof window !== "undefined") window.localStorage.setItem(key, "1");
+  };
+  return { show, dismiss };
+}
+
 /* =========================================================
-   Data Extraction (NEW shape + backward compatible)
-   - NEW:  data.shadbala.components.normalized[planet][pillar]
-           data.shadbala.components.virupa_rupa[planet].components.{rupa|virupa}[pillar]
-           data.shadbala.components.virupa_rupa[planet].totals.{rupa|virupa}
-           data.shadbala.totals.normalized[planet]
-   - OLD:  data.shadbala.components[planet][pillar]
-           data.shadbala.total[planet]
+   Data Extraction (supports NEW + OLD)
 ========================================================= */
 function extractShadbala(data?: any, norm?: NormLike) {
   const raw = data?.shadbala ?? data?.shad_bala ?? null;
@@ -76,7 +121,7 @@ function extractShadbala(data?: any, norm?: NormLike) {
   let classicalComponents: Record<string, Partial<Record<PillarKey, { rupa?: number; virupa?: number }>>> = {};
   let classicalTotals: Record<string, { rupa?: number; virupa?: number }> = {};
 
-  // --------- prefer NEW normalized totals/components ----------
+  // NEW normalized
   const newComp = raw?.components?.normalized;
   const newTotals = raw?.totals?.normalized;
 
@@ -100,7 +145,7 @@ function extractShadbala(data?: any, norm?: NormLike) {
     }
   }
 
-  // --------- classical: virupa_rupa, if present ----------
+  // Classical virupa/rupa (optional)
   const vr = raw?.components?.virupa_rupa;
   if (vr && typeof vr === "object") {
     for (const [planet, block] of Object.entries(vr as Record<string, any>)) {
@@ -128,9 +173,8 @@ function extractShadbala(data?: any, norm?: NormLike) {
     }
   }
 
-  // --------- fallback to OLD shape ----------
+  // OLD shape fallback
   if (!components && raw?.components && typeof raw.components === "object") {
-    // old shape: raw.components[planet][pillar]
     components = {};
     for (const [planet, pillars] of Object.entries(raw.components as Record<string, any>)) {
       const entry: Partial<Record<PillarKey, number>> = {};
@@ -143,7 +187,6 @@ function extractShadbala(data?: any, norm?: NormLike) {
   }
 
   if (!totals && raw?.total && typeof raw.total === "object") {
-    // old shape: raw.total[planet] normalized
     totals = {};
     for (const [planet, v] of Object.entries(raw.total as Record<string, any>)) {
       const n = Number(v);
@@ -172,7 +215,7 @@ function extractShadbala(data?: any, norm?: NormLike) {
 }
 
 /* =========================================================
-   Visuals: Radar Chart (SVG)
+   Visuals
 ========================================================= */
 function RadarChart({ values, size = 160 }: { values: number[]; size?: number }) {
   const pad = 18;
@@ -206,9 +249,6 @@ function RadarChart({ values, size = 160 }: { values: number[]; size?: number })
   );
 }
 
-/* =========================================================
-   Click-away hook for the ? tooltip
-========================================================= */
 function useClickAway<T extends HTMLElement>(onAway: () => void) {
   const ref = useRef<T | null>(null);
   useEffect(() => {
@@ -221,6 +261,19 @@ function useClickAway<T extends HTMLElement>(onAway: () => void) {
   }, [onAway]);
   return ref;
 }
+
+/* What-if copy */
+const WHAT_IF: Record<string, { strong: string; weak: string; areas: string[] }> = {
+  Sun:     { strong: "Leadership glow, clarity, recognition.", weak: "Low vitality; ego feels tender.", areas: ["Career", "Confidence", "Visibility"] },
+  Moon:    { strong: "Emotional balance, good sleep/intuition.", weak: "Mood swings, low hydration/energy.", areas: ["Emotions", "Home", "Habits"] },
+  Mercury: { strong: "Sharp mind, fast learning, witty comms.", weak: "Scatter, overthinking, mixed signals.", areas: ["Study", "Communication", "Commerce"] },
+  Venus:   { strong: "Romance blooms, social charm, style glow.", weak: "Meh in romance, impulse buys.", areas: ["Relationships", "Aesthetics", "Money"] },
+  Mars:    { strong: "Drive, courage, competitive fire.", weak: "Irritation, wasted effort, burnout risk.", areas: ["Action", "Discipline", "Sport"] },
+  Jupiter: { strong: "Mentors, luck, growth mindset.", weak: "Overexpansion or doubt in purpose.", areas: ["Wisdom", "Wealth", "Beliefs"] },
+  Saturn:  { strong: "Discipline, systems, long-game wins.", weak: "Delay fatigue; fear of failure.", areas: ["Work Ethic", "Boundaries", "Time"] },
+  Rahu:    { strong: "Bold experiments, viral opportunities.", weak: "Chaos, shortcuts, clout-chasing.", areas: ["Innovation", "Media", "Ambition"] },
+  Ketu:    { strong: "Detachment superpower, deep focus.", weak: "Ghosting energy, isolation.", areas: ["Focus", "Spirituality", "Minimalism"] },
+};
 
 /* =========================================================
    UI Bits
@@ -255,7 +308,6 @@ function PillarRow({
       <div className="text-base leading-none">{meta.emoji}</div>
 
       <div className="flex-1">
-        {/* Header row: wraps on mobile so badge goes to next line */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="text-sm font-medium flex items-center gap-2">
             {meta.title}
@@ -276,16 +328,19 @@ function PillarRow({
             </div>
           </div>
 
-          {/* Badge + score go full-width on mobile to avoid overflow */}
           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
             <div className={`text-[10px] px-2 py-0.5 rounded-full border ${b.cls} whitespace-normal leading-tight text-center`}>
               {b.text}
             </div>
             <div className="text-xs text-white/70 ml-auto sm:ml-0">{fmt1(v)}</div>
+            {v >= 0.70 && (
+              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-300/10 text-emerald-300">
+                👑 Boss pillar
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Bar */}
         <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-pink-400 to-violet-500 transition-[width] duration-700 ease-out"
@@ -293,7 +348,6 @@ function PillarRow({
           />
         </div>
 
-        {/* Hint + story + (optional classical) */}
         <div className="mt-1.5 text-[11px] leading-relaxed text-white/70">
           {meta.hint} <span className="text-white/60">({meta.story(v)})</span>
           {showClassic && (classical?.rupa != null || classical?.virupa != null) && (
@@ -309,15 +363,15 @@ function PillarRow({
   );
 }
 
-function StrengthRing({ value }: { value: number }) {
+function StrengthRing({ value, pulseOnStrong = true, charged = true }: { value: number; pulseOnStrong?: boolean; charged?: boolean }) {
   const v = clamp01(value);
   const deg = Math.round(v * 360);
-  const inset = Math.max(6, 14 - Math.round(v * 10)); // thicker when strong
-  const pulse = v >= 0.7 ? 'animate-pulse' : '';
+  const inset = Math.max(6, 14 - Math.round(v * 10));
+  const pulse = pulseOnStrong && v >= 0.7 ? 'animate-pulse' : '';
   return (
     <div className={`relative w-24 h-24 ${pulse}`}>
       <div
-        className="absolute inset-0 rounded-full"
+        className={`absolute inset-0 rounded-full ${charged ? "" : "opacity-40"} ${v >= 0.70 ? "shadow-[0_0_30px_rgba(16,185,129,.35)]" : ""}`}
         style={{ backgroundImage: `conic-gradient(#a78bfa ${deg}deg, rgba(255,255,255,0.06) ${deg}deg)` }}
       />
       <div className="absolute inset-0 rounded-full bg-black/10 blur-md" />
@@ -328,6 +382,67 @@ function StrengthRing({ value }: { value: number }) {
   );
 }
 
+/* Spotlight modal */
+function SpotlightModal({
+  open,
+  onClose,
+  planet,
+  value,
+  classical,
+}: {
+  open: boolean;
+  onClose: () => void;
+  planet: string;
+  value: number;
+  classical?: { rupa?: number; virupa?: number };
+}) {
+  if (!open) return null;
+  const info = WHAT_IF[planet] ?? { strong: "", weak: "", areas: [] };
+  const lvl = levelFromValue(value);
+  const b = badgeAbsolute(value);
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-[71] w-full sm:max-w-md sm:rounded-2xl sm:border sm:border-white/10 bg-gradient-to-b from-indigo-950/80 to-black p-5 sm:p-6 text-white">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">{PLANET_EMOJI[planet] ?? "✨"}</div>
+            <div>
+              <div className="text-xl font-semibold">{planet}</div>
+              <div className="text-xs text-white/60">Level {lvl}/5 • <span className={`px-1.5 py-0.5 rounded-full border ${b.cls} text-[10px]`}>{b.text}</span></div>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-lg border border-white/10 px-2 py-1 text-xs hover:bg-white/10">Close</button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center">
+          <StrengthRing value={value} />
+        </div>
+
+        {info.areas.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {info.areas.map((a, i) => (
+              <span key={i} className="px-2.5 py-1 rounded-xl bg-white/10 border border-white/10 text-xs">{a}</span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm space-y-2">
+          <div className="text-xs uppercase tracking-wide text-white/60">What if?</div>
+          <div><span className="font-semibold">Strong {planet}:</span> {info.strong}</div>
+          <div><span className="font-semibold">Weak {planet}:</span> {info.weak}</div>
+          {classical && (classical.rupa != null || classical.virupa != null) && (
+            <div className="text-[12px] text-white/60 pt-1">
+              Classical total: {classical.rupa != null ? `${fmt1(classical.rupa)} Rūpas` : ""} {classical.virupa != null ? `(${fmt0(classical.virupa)} Virūpas)` : ""}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Planet card (with Boss Mode & nudge) */
 function PlanetCard({
   name,
   pillars,
@@ -335,7 +450,8 @@ function PlanetCard({
   classicalPlanet,
   showClassic,
   openTipId,
-  setOpenTipId
+  setOpenTipId,
+  onOpenSpotlight
 }: {
   name: string;
   pillars: Partial<Record<PillarKey, number>>;
@@ -344,11 +460,15 @@ function PlanetCard({
   showClassic: boolean;
   openTipId: string | null;
   setOpenTipId: (id: string | null) => void;
+  onOpenSpotlight: (planet: string, value: number, classical?: { rupa?: number; virupa?: number }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const totalSafe = clamp01(total ?? 0);
   const b = badgeAbsolute(totalSafe);
+  const isBoss = !!(b as any).isBoss;
   const valuesInOrder = PILLAR_ORDER.map(k => pillars[k] ?? 0);
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.35 });
+  const { show: showNudge, dismiss: dismissNudge } = useOneTimeNudge("ka:shadbala:spotlight:nudge");
 
   const totalStory =
     totalSafe >= 0.7 ? `${name} is in boss mode — expect noticeable results.`
@@ -360,21 +480,58 @@ function PlanetCard({
   const totV = classicalPlanet?.totals?.virupa;
 
   return (
-    <div className="snap-center group rounded-2xl border border-white/10 bg-white/5 p-5 transition-all hover:bg-white/8 hover:shadow-[0_10px_30px_rgba(147,51,234,.25)]">
+    <div
+      ref={ref}
+      className={
+        "snap-center group rounded-2xl border border-white/10 bg-white/5 p-5 transition-all " +
+        (isBoss
+          ? "ring-1 ring-emerald-400/30 shadow-[0_0_32px_rgba(16,185,129,.25)] hover:bg-white/8"
+          : "hover:bg-white/8 hover:shadow-[0_10px_30px_rgba(147,51,234,.25)]"
+        )
+      }
+    >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">{PLANET_EMOJI[name] ?? "✨"}</div>
-          <div>
-            <div className="text-base font-semibold">{name}</div>
-            <div className="text-[11px] text-white/60">Shadbala total</div>
+        <button
+          onClick={() => { onOpenSpotlight(name, totalSafe, classicalPlanet?.totals); dismissNudge(); }}
+          className="group/planet flex items-center gap-3 rounded-xl px-1 py-1
+                     cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60
+                     hover:bg-white/5 transition-colors"
+          aria-label={`Open ${name} Spotlight`}
+          title="Open Spotlight"
+        >
+          <div className="text-2xl transition-transform group-hover/planet:scale-[1.05]">{PLANET_EMOJI[name] ?? "✨"}</div>
+          <div className="text-left">
+            <div className="flex items-center gap-1.5">
+              <div className="text-base font-semibold underline decoration-transparent group-hover/planet:decoration-white/40">
+                {name}
+              </div>
+              {isBoss && (
+                <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full
+                                 border border-emerald-400/25 bg-emerald-300/10 text-emerald-300">
+                  👑 Boss Mode
+                </span>
+              )}
+              <span className="text-xs text-white/50 translate-y-[1px] transition-transform group-hover/planet:translate-x-0.5">↗</span>
+            </div>
+            <div className="text-[11px] text-white/60">Shadbala total • Level {levelFromValue(totalSafe)}/5</div>
+
+            {/* {showNudge && (
+              <div className="mt-1 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5
+                              rounded-full border border-white/10 bg-white/5 text-white/70
+                              animate-[pulse_2.0s_ease-in-out_infinite]">
+                <span className="opacity-80">Tap for Spotlight</span>
+                <span className="opacity-70">↗</span>
+              </div>
+            )} */}
           </div>
-        </div>
+        </button>
+
         <div className={`text-[11px] px-2 py-0.5 rounded-full border ${b.cls}`}>{b.text}</div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
         <div className="flex items-center justify-center">
-          <StrengthRing value={totalSafe} />
+          <StrengthRing value={totalSafe} charged={inView} />
         </div>
         <div className="flex items-center justify-center">
           <RadarChart values={valuesInOrder} size={160} />
@@ -420,7 +577,7 @@ function PlanetCard({
   );
 }
 
-/* Inline FAQ (unchanged) */
+/* Inline FAQ */
 function InlineFAQ() {
   return (
     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-[13px]">
@@ -434,8 +591,9 @@ function InlineFAQ() {
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
         <div className="font-semibold mb-1">How is total made?</div>
         <p className="text-white/75">
-          Your engine normalizes each pillar to 0–1 and blends them (often weighted). We show the
-          <strong> totals from your API</strong>. Exact math can vary by tradition.
+          Karma Aligns engine normalizes each pillar to 0–1 and blends them (often weighted). 
+          It uses <strong>Lahiri ayanamsa</strong> from the <strong>Swiss Ephemeris</strong> for all calculations.
+          Exact math can vary by tradition.
         </p>
       </div>
       <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -452,7 +610,102 @@ function InlineFAQ() {
 }
 
 /* =========================================================
-   Comparison Mode (unchanged)
+   Comparisons as Stories (with Boss highlight + dynamic tip)
+========================================================= */
+function ComparisonsStories({ totals }: { totals?: Record<string, number> | null }) {
+  const entries = useMemo(() => {
+    if (!totals) return [];
+    return Object.entries(totals)
+      .map(([p, v]) => [p, clamp01(Number(v))] as [string, number])
+      .filter(([, v]) => isFinite(v));
+  }, [totals]);
+
+  const items = useMemo(() => {
+    if (!entries.length) return [];
+    const map = Object.fromEntries(entries);
+    const stories: { text: string }[] = [];
+
+    if (map.Moon != null && map.Sun != null) {
+      const moon = map.Moon, sun = map.Sun;
+      const stronger = moon > sun ? "Moon" : moon < sun ? "Sun" : "Tie";
+      const arrow = moon > sun ? "feelings > ego" : moon < sun ? "ego > feelings" : "feelings = ego";
+      if (stronger !== "Tie") {
+        stories.push({ text: `Your ${stronger === "Moon" ? `Moon (${fmt1(moon)}) is stronger than your Sun (${fmt1(sun)}). Right now, ${arrow}.` : `Your Sun (${fmt1(sun)}) is stronger than your Moon (${fmt1(moon)}). Right now, ${arrow}.`}` });
+      } else {
+        stories.push({ text: `Your Sun and Moon are balanced at ~${fmt1(sun)} → ego ≈ feelings.` });
+      }
+    }
+
+    const sorted = [...entries].sort((a,b)=>b[1]-a[1]);
+    if (sorted.length >= 2) {
+      const [p1, v1] = sorted[0];
+      const [p2, v2] = sorted[1];
+      stories.push({ text: `${p1} (${fmt1(v1)}) dominates over ${p2} (${fmt1(v2)}) → ${p1} themes lead.` });
+    }
+    if (sorted.length >= 3) {
+      const [p1, v1] = sorted[0];
+      const [p3, v3] = sorted[2];
+      stories.push({ text: `${p1} (${fmt1(v1)}) also outpaces ${p3} (${fmt1(v3)}).` });
+    }
+
+    return stories.slice(0, 3);
+  }, [entries]);
+
+  const tip = useMemo(() => {
+    if (!entries.length) return null;
+    const strong = entries.filter(([,v]) => v >= 0.70).map(([p]) => p);
+    const weak = entries.filter(([,v]) => v >= 0.40 && v < 0.55).map(([p]) => p);
+    const veryWeak = entries.filter(([,v]) => v < 0.40).map(([p]) => p);
+    const sorted = [...entries].sort((a,b)=>b[1]-a[1]);
+    const [topP, topV] = sorted[0];
+
+    if (strong.length >= 3) return `Power cluster: ${strong.slice(0,3).join(", ")} — you’re in “Boss Mode” across multiple areas.`;
+    if (veryWeak.length >= 2) return `Tender zones: ${veryWeak.join(", ")} — try not to over-index decisions here this cycle.`;
+    if (topP === "Saturn" && topV >= 0.70) return `Discipline arc unlocked — strong Saturn (${fmt1(topV)}) favors systems and long-game wins.`;
+    if (topP === "Jupiter" && topV >= 0.70) return `Mentor luck online — strong Jupiter (${fmt1(topV)}) boosts learning and guidance.`;
+    if (topP === "Venus" && topV >= 0.70) return `Charm magnet — strong Venus (${fmt1(topV)}) lifts relationships and style.`;
+    if (topP === "Mars" && topV >= 0.70) return `Go-mode energy — strong Mars (${fmt1(topV)}) rewards action and courage.`;
+    if (topP === "Moon" && topV >= 0.70) return `Mood-led momentum — strong Moon (${fmt1(topV)}) makes rest and intuition pay off.`;
+    if (weak.length) return `Mixed signal phase — a few planets are warming up (${weak.join(", ")}). Keep it light, iterate.`;
+
+    return `Spotlight on ${topP} (${fmt1(topV)}) — lean into its themes for smoother wins.`;
+  }, [entries]);
+
+  if (!items.length) return null;
+
+  const sorted = [...entries].sort((a,b)=>b[1]-a[1]);
+  const [topP, topV] = sorted[0] ?? ["", 0];
+  const boss = topV >= 0.70 ? topP : null;
+
+  return (
+    <div className="mt-5 -mx-4 px-4">
+      <div className="text-sm font-semibold mb-2">Quick Reads</div>
+      <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+        {items.map((s, i) => (
+          <div
+            key={i}
+            className="snap-center min-w-[85%] sm:min-w-[360px] rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-500/10 border border-white/10 p-4 shadow-[0_10px_30px_rgba(147,51,234,.25)]"
+          >
+            <div className="text-[13px] leading-relaxed">{s.text}</div>
+            <div className="mt-2 text-[11px] text-white/60">
+              {boss ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full
+                                 border border-emerald-400/25 bg-emerald-300/10 text-emerald-300">
+                  👑 {boss} is in Boss Mode
+                </span>
+              ) : (
+                tip || "Quick perspective from your current strengths."
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   Compare Panel
 ========================================================= */
 function ComparePanel({
   planets,
@@ -534,7 +787,7 @@ function ComparePanel({
                 <div key={k} className="flex items-center gap-2 text-xs">
                   <span className="w-10 text-left">{fmt1(v)}</span>
                   <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-pink-400 to-violet-500" style={{ width: `${clamp01(v)*100}%` }} />
+                    <div className="h-full bg-gradient-to-r from-pink-400 to-violet-500" style={{ width: `${clamp01(v) * 100}%` }} />
                   </div>
                   <span className="w-28 text-white/70 text-right">{PILLAR_META[k].title}</span>
                 </div>
@@ -552,7 +805,7 @@ function ComparePanel({
 }
 
 /* =========================================================
-   Collapsible + toggle helpers (persisted + animated)
+   Collapsible + toggles
 ========================================================= */
 function usePersistentToggle(key: string, initial = true) {
   const [open, setOpen] = useState<boolean>(() => {
@@ -605,7 +858,7 @@ function Collapsible({ open, children }: { open: boolean; children: React.ReactN
 }
 
 /* =========================================================
-   Main Component (collapsible + classical toggle)
+   Main Component
 ========================================================= */
 export default function Shadbala({
   data,
@@ -620,14 +873,10 @@ export default function Shadbala({
   );
   const hasPlanetCards = components && Object.keys(components).length;
 
-  // one open tooltip at a time across section
   const [openTipId, setOpenTipId] = useState<string | null>(null);
-
-  // collapsible state (persisted)
   const { open, setOpen } = usePersistentToggle("ka:collapse:shadbala", true);
-
-  // NEW: classical toggle (persisted) — OFF by default
   const { flag: showClassic, setFlag: setShowClassic } = usePersistentFlag("ka:shadbala:classic", false);
+  const [spot, setSpot] = useState<{ open: boolean; planet?: string; value?: number; classical?: { rupa?: number; virupa?: number } }>({ open: false });
 
   if (!hasPlanetCards && !pillarSummary.length) return null;
 
@@ -636,11 +885,11 @@ export default function Shadbala({
     ...Object.keys(components!).filter(p => !PLANET_ORDER.includes(p))
   ] : [];
 
-  // Build section body
   const body = hasPlanetCards ? (
     <>
-      {/* Swipe on mobile; grid on desktop */}
-      <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar">
+      <ComparisonsStories totals={totals ?? undefined} />
+
+      <div className="md:hidden -mx-4 px-4 overflow-x-auto snap-x snap-mandatory no-scrollbar mt-4">
         <div className="flex gap-4">
           {planetList.map((planet) => (
             <div key={planet} className="min-w-[90%]">
@@ -648,47 +897,45 @@ export default function Shadbala({
                 name={planet}
                 pillars={components![planet]}
                 total={totals?.[planet]}
-                classicalPlanet={{
-                  totals: classicalTotals?.[planet],
-                  comps: classicalComponents?.[planet]
-                }}
+                classicalPlanet={{ totals: classicalTotals?.[planet], comps: classicalComponents?.[planet] }}
                 showClassic={showClassic}
                 openTipId={openTipId}
                 setOpenTipId={setOpenTipId}
+                onOpenSpotlight={(p, v, c) => setSpot({ open: true, planet: p, value: v, classical: c })}
               />
             </div>
           ))}
         </div>
       </div>
 
-      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         {planetList.map((planet) => (
           <PlanetCard
             key={planet}
             name={planet}
             pillars={components![planet]}
             total={totals?.[planet]}
-            classicalPlanet={{
-              totals: classicalTotals?.[planet],
-              comps: classicalComponents?.[planet]
-            }}
+            classicalPlanet={{ totals: classicalTotals?.[planet], comps: classicalComponents?.[planet] }}
             showClassic={showClassic}
             openTipId={openTipId}
             setOpenTipId={setOpenTipId}
+            onOpenSpotlight={(p, v, c) => setSpot({ open: true, planet: p, value: v, classical: c })}
           />
         ))}
       </div>
 
-      <ComparePanel
-        planets={planetList}
-        components={components!}
-        totals={totals ?? null}
-      />
-
+      <ComparePanel planets={planetList} components={components!} totals={totals ?? null} />
       <InlineFAQ />
+
+      <SpotlightModal
+        open={spot.open}
+        onClose={() => setSpot({ open: false })}
+        planet={spot.planet ?? "Planet"}
+        value={spot.value ?? 0}
+        classical={spot.classical}
+      />
     </>
   ) : (
-    // Fallback: just six pillars overall (no classical here)
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {pillarSummary.map((p, i) => {
         const b = badgeAbsolute(p.value);
@@ -710,10 +957,7 @@ export default function Shadbala({
                 <span className="text-white/80 font-medium">{fmt1(p.value)}</span>
               </div>
               <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-pink-400 to-violet-500 transition-[width] duration-700 ease-out"
-                  style={{ width: `${clamp01(p.value) * 100}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-pink-400 to-violet-500 transition-[width] duration-700 ease-out" style={{ width: `${clamp01(p.value) * 100}%` }} />
               </div>
               <div className="mt-2 text-[11px] text-white/70">
                 {PILLAR_META[p.key].hint} <span className="text-white/60">({PILLAR_META[p.key].story(p.value)})</span>
@@ -727,12 +971,10 @@ export default function Shadbala({
 
   return (
     <section id="shadbala" className="mt-6">
-      {/* Collapsible header + Classical toggle */}
       <div className="flex items-center justify-between mb-3 gap-3">
         <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">Shadbala (Sixfold Strength)</h2>
 
         <div className="flex items-center gap-2">
-          {/* Classical values toggle (doesn't change layout, only reveals text) */}
           <button
             type="button"
             onClick={() => setShowClassic(!showClassic)}
@@ -743,12 +985,11 @@ export default function Shadbala({
             title="Show Classical Rūpa & Virūpa values"
           >
             Classical values
-            <span className={`inline-block w-8 h-4 rounded-full bg-white/10 relative`}>
+            <span className="inline-block w-8 h-4 rounded-full bg-white/10 relative">
               <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${showClassic ? "translate-x-4" : ""}`} />
             </span>
           </button>
 
-          {/* Collapsible control */}
           <button
             type="button"
             onClick={() => setOpen(!open)}
@@ -761,7 +1002,6 @@ export default function Shadbala({
         </div>
       </div>
 
-      {/* Mobile: classical toggle below header for reachability */}
       <div className="sm:hidden mb-2">
         <button
           type="button"
@@ -773,13 +1013,12 @@ export default function Shadbala({
           title="Show Classical Rūpa & Virūpa values"
         >
           Classical values
-          <span className={`inline-block w-8 h-4 rounded-full bg-white/10 relative`}>
+          <span className="inline-block w-8 h-4 rounded-full bg-white/10 relative">
             <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${showClassic ? "translate-x-4" : ""}`} />
           </span>
         </button>
       </div>
 
-      {/* Animated collapsible content */}
       <Collapsible open={open}>{body}</Collapsible>
     </section>
   );

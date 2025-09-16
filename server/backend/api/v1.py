@@ -325,8 +325,9 @@ def compute():
 
     # Bhava bala
     try:
-        from astrology.bhava_bala import compute_bhava_bala
-        payload["bhava_bala"] = compute_bhava_bala(planets, chalit_houses)
+        from astrology.bhava_bala import compute_bhava_bala_enhanced, compute_bhava_bala
+        legacy = compute_bhava_bala(planets, chalit_houses)
+        payload["bhava_bala"] = compute_bhava_bala_enhanced(legacy, return_scale="both")
     except Exception:
         pass
 

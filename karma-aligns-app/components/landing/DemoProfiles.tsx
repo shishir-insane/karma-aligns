@@ -16,14 +16,14 @@ export default function DemoProfiles({ onSelect, onNewForm }: DemoProfilesProps)
       data: { name: 'Sage No. 404', date: '1984-09-24', time: '17:30', tz: '+05:30', lat: 26.7606, lon: 83.3732 }
     },
     {
-      name: 'Marie Curie',
+      name: 'Sage No. 301',
       icon: <Brain className="w-4 h-4" />,
-      data: { name: 'Marie Curie', dob: '1867-11-07', tob: '12:00', tz: '+01:00', lat: 52.2297, lon: 21.0122 }
+      data: { name: 'Sage No. 301', dob: '2015-08-14', tob: '22:30', tz: '+05:30', lat: 12.9715, lon: 77.5945 }
     },
     {
-      name: 'Albert Einstein',
+      name: 'Sage No. 500',
       icon: <User className="w-4 h-4" />,
-      data: { name: 'Albert Einstein', date: '1879-03-14', time: '11:30', tz: '+01:00', lat: '48.4069', lon: '9.9945' }
+      data: { name: 'Sage No. 500', date: '1986-03-17', time: '16:50', tz: '+05:30', lat: 24.8332, lon: 92.7789 }
     }
   ];
 

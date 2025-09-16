@@ -7,6 +7,7 @@ import { H1, H2, H3, Small, BtnLabel } from "@/components/ui/Type";
 import { normalizeCompute, type Norm } from "./normalizeCompute";
 import JsonExplorer from "@/components/results/JsonExplorer";
 import Shadbala from "@/components/results/Shadbala";
+import BhavaBala from "@/components/results/BhavaBala";
 
 /* ---------- tiny helpers ---------- */
 const isObj = (x: any) => x && typeof x === "object" && !Array.isArray(x);
@@ -277,22 +278,30 @@ function InteractivePositions({ table }: { table: UITbl }) {
 }
 
 /* ---------- Bars / Heatmap / Timeline / HouseGrid ---------- */
-function Bars({ data, unit = "" }: { data: Array<{ label: string; value: number }>; unit?: string }) {
+function Bars({ data, unit = "" }: { data: Array<{ id?: string | number; label: string; value: number }>; unit?: string }) {
     if (!data?.length) return null;
     const vmax = Math.max(...data.map(d => d.value || 0), 1);
     return (
         <div className="space-y-3">
-            {data.map((d) => (
-                <div key={d.label}>
-                    <div className="flex justify-between text-xs text-white/60 mb-1">
-                        <span className="truncate">{d.label}</span>
-                        <span>{d.value.toFixed(2)}{unit}</span>
+            {data.map((d, i) => {
+                const key =
+                    d.key != null
+                        ? `k-${String(d.key)}`
+                        : d.id != null
+                            ? `id-${String(d.id)}-${i}`  // namespace id and add index to break ties (handles id=0)
+                            : `lbl-${d.label ?? "item"}-${i}`;
+                return (
+                    <div key={key}>
+                        <div className="flex justify-between text-xs text-white/60 mb-1">
+                            <span className="truncate">{d.label}</span>
+                            <span>{d.value.toFixed(2)}{unit}</span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-600" style={{ width: `${Math.min(100, (d.value / vmax) * 100)}%` }} />
+                        </div>
                     </div>
-                    <div className="h-2.5 rounded-full bg-white/10 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-600" style={{ width: `${Math.min(100, (d.value / vmax) * 100)}%` }} />
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
@@ -456,14 +465,32 @@ export default function ResultsPage({
                 <Card className="mt-6">
                     <Shadbala data={data} norm={norm} />
                 </Card>
+                <Card className="mt-6">
+                    <BhavaBala data={data} />
+                </Card>
             </section>
 
             {/* Strengths / Shadbala / Bhava */}
             {(norm.strengths?.length || norm.shadbala?.length || norm.bhavaBala?.length) && (
                 <section id="strength" className="container mx-auto px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {norm.strengths?.length ? <Card><H2 className="mb-3">Planet strengths</H2><Bars data={norm.strengths.map(s => ({ label: s.body, value: s.score }))} /></Card> : null}
-                    {norm.shadbala?.length ? <Card><H2 className="mb-3">Shadbala</H2><Bars data={norm.shadbala.map(s => ({ label: s.pillar, value: s.value }))} /></Card> : null}
-                    {norm.bhavaBala?.length ? <Card><H2 className="mb-3">Bhava Bala</H2><Bars data={norm.bhavaBala.map(h => ({ label: `House ${h.house} (${(h.net ?? h.score)})`, value: (h.net ?? h.score) || 0 }))} /><div className="mt-3 text-[11px] text-white/60">Includes benefics/malefics where provided.</div></Card> : null}
+                    {norm.strengths?.length ? (
+                        <Card>
+                            <H2 className="mb-3">Planet strengths</H2>
+                            <Bars data={norm.strengths.map(s => ({ id: s.body, label: s.body, value: s.score }))} />
+                        </Card>
+                    ) : null}
+                    {norm.shadbala?.length ? (
+                        <Card>
+                            <H2 className="mb-3">Shadbala</H2>
+                            <Bars data={norm.shadbala.map(s => ({ id: s.pillar, label: s.pillar, value: s.value }))} />
+                        </Card>
+                    ) : null}
+                    {norm.bhavaBala?.length ? (
+                        <Card>
+                            <H2 className="mb-3">Bhava Bala</H2>
+                            <Bars data={norm.bhavaBala.map(h => ({ id: h.house, label: `House ${h.house} (${(h.net ?? h.score)})`, value: (h.net ?? h.score) || 0 }))} />
+                        </Card>
+                    ) : null}
                 </section>
             )}
 

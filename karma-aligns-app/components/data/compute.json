@@ -27085,7 +27085,7 @@
     }
   },
   "bhava_bala": {
-    "bhava_bala": [
+    "legacy_counts": [
       {
         "benefics": 0,
         "house": 1,
@@ -27158,7 +27158,347 @@
         "malefics": 0,
         "net": 0
       }
-    ]
+    ],
+    "normalized": {
+      "1": {
+        "bhava_drik": 0.5,
+        "kendradhi": 1.0
+      },
+      "2": {
+        "bhava_drik": 0.4166666666666667,
+        "kendradhi": 0.6666666666666666
+      },
+      "3": {
+        "bhava_drik": 0.5,
+        "kendradhi": 0.3333333333333333
+      },
+      "4": {
+        "bhava_drik": 0.5,
+        "kendradhi": 1.0
+      },
+      "5": {
+        "bhava_drik": 0.5,
+        "kendradhi": 0.6666666666666666
+      },
+      "6": {
+        "bhava_drik": 0.5833333333333334,
+        "kendradhi": 0.3333333333333333
+      },
+      "7": {
+        "bhava_drik": 0.5,
+        "kendradhi": 1.0
+      },
+      "8": {
+        "bhava_drik": 0.4166666666666667,
+        "kendradhi": 0.6666666666666666
+      },
+      "9": {
+        "bhava_drik": 0.5833333333333334,
+        "kendradhi": 0.3333333333333333
+      },
+      "10": {
+        "bhava_drik": 0.5,
+        "kendradhi": 1.0
+      },
+      "11": {
+        "bhava_drik": 0.5,
+        "kendradhi": 0.6666666666666666
+      },
+      "12": {
+        "bhava_drik": 0.5,
+        "kendradhi": 0.3333333333333333
+      }
+    },
+    "summary": {
+      "ranking_by_rupa": [
+        [
+          1,
+          1.75
+        ],
+        [
+          4,
+          1.75
+        ],
+        [
+          7,
+          1.75
+        ],
+        [
+          10,
+          1.75
+        ],
+        [
+          5,
+          1.4166666666666665
+        ],
+        [
+          11,
+          1.4166666666666665
+        ],
+        [
+          2,
+          1.2916666666666665
+        ],
+        [
+          8,
+          1.2916666666666665
+        ],
+        [
+          6,
+          1.2083333333333333
+        ],
+        [
+          9,
+          1.2083333333333333
+        ],
+        [
+          3,
+          1.0833333333333333
+        ],
+        [
+          12,
+          1.0833333333333333
+        ]
+      ]
+    },
+    "totals": {
+      "rupa": {
+        "1": 1.75,
+        "2": 1.2916666666666665,
+        "3": 1.0833333333333333,
+        "4": 1.75,
+        "5": 1.4166666666666665,
+        "6": 1.2083333333333333,
+        "7": 1.75,
+        "8": 1.2916666666666665,
+        "9": 1.2083333333333333,
+        "10": 1.75,
+        "11": 1.4166666666666665,
+        "12": 1.0833333333333333
+      },
+      "tier": {
+        "1": "weak (<30 R\u016bpas)",
+        "2": "weak (<30 R\u016bpas)",
+        "3": "weak (<30 R\u016bpas)",
+        "4": "weak (<30 R\u016bpas)",
+        "5": "weak (<30 R\u016bpas)",
+        "6": "weak (<30 R\u016bpas)",
+        "7": "weak (<30 R\u016bpas)",
+        "8": "weak (<30 R\u016bpas)",
+        "9": "weak (<30 R\u016bpas)",
+        "10": "weak (<30 R\u016bpas)",
+        "11": "weak (<30 R\u016bpas)",
+        "12": "weak (<30 R\u016bpas)"
+      },
+      "virupa": {
+        "1": 105.0,
+        "2": 77.5,
+        "3": 65.0,
+        "4": 105.0,
+        "5": 85.0,
+        "6": 72.5,
+        "7": 105.0,
+        "8": 77.5,
+        "9": 72.5,
+        "10": 105.0,
+        "11": 85.0,
+        "12": 65.0
+      }
+    },
+    "virupa_rupa": {
+      "1": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 1.0
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 60.0
+          }
+        },
+        "totals": {
+          "rupa": 1.75,
+          "virupa": 105.0
+        }
+      },
+      "2": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.625,
+            "kendradhi": 0.6666666666666666
+          },
+          "virupa": {
+            "bhava_drik": 37.5,
+            "kendradhi": 40.0
+          }
+        },
+        "totals": {
+          "rupa": 1.2916666666666665,
+          "virupa": 77.5
+        }
+      },
+      "3": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 0.3333333333333333
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 20.0
+          }
+        },
+        "totals": {
+          "rupa": 1.0833333333333333,
+          "virupa": 65.0
+        }
+      },
+      "4": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 1.0
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 60.0
+          }
+        },
+        "totals": {
+          "rupa": 1.75,
+          "virupa": 105.0
+        }
+      },
+      "5": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 0.6666666666666666
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 40.0
+          }
+        },
+        "totals": {
+          "rupa": 1.4166666666666665,
+          "virupa": 85.0
+        }
+      },
+      "6": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.875,
+            "kendradhi": 0.3333333333333333
+          },
+          "virupa": {
+            "bhava_drik": 52.5,
+            "kendradhi": 20.0
+          }
+        },
+        "totals": {
+          "rupa": 1.2083333333333333,
+          "virupa": 72.5
+        }
+      },
+      "7": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 1.0
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 60.0
+          }
+        },
+        "totals": {
+          "rupa": 1.75,
+          "virupa": 105.0
+        }
+      },
+      "8": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.625,
+            "kendradhi": 0.6666666666666666
+          },
+          "virupa": {
+            "bhava_drik": 37.5,
+            "kendradhi": 40.0
+          }
+        },
+        "totals": {
+          "rupa": 1.2916666666666665,
+          "virupa": 77.5
+        }
+      },
+      "9": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.875,
+            "kendradhi": 0.3333333333333333
+          },
+          "virupa": {
+            "bhava_drik": 52.5,
+            "kendradhi": 20.0
+          }
+        },
+        "totals": {
+          "rupa": 1.2083333333333333,
+          "virupa": 72.5
+        }
+      },
+      "10": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 1.0
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 60.0
+          }
+        },
+        "totals": {
+          "rupa": 1.75,
+          "virupa": 105.0
+        }
+      },
+      "11": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 0.6666666666666666
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 40.0
+          }
+        },
+        "totals": {
+          "rupa": 1.4166666666666665,
+          "virupa": 85.0
+        }
+      },
+      "12": {
+        "components": {
+          "rupa": {
+            "bhava_drik": 0.75,
+            "kendradhi": 0.3333333333333333
+          },
+          "virupa": {
+            "bhava_drik": 45.0,
+            "kendradhi": 20.0
+          }
+        },
+        "totals": {
+          "rupa": 1.0833333333333333,
+          "virupa": 65.0
+        }
+      }
+    }
   },
   "chart_id": "d7d5b37fa763e108edde2cfdfa6d535811e5d9df662be1a4a04645dde366b6f8",
   "charts": {
