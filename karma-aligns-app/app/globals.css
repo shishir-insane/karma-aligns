@@ -30,6 +30,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Global heading scale */
+h1, h2, h3, h4, h5, h6 { font-family: var(--heading); font-weight: 600; color: #e8e8ef; }
+h1 { font-size: 2rem;   line-height: 2.5rem; }  /* 32 / 40 */
+h2 { font-size: 1.5rem; line-height: 2rem;   }  /* 24 / 32 */
+h3 { font-size: 1.25rem;line-height: 1.75rem;}  /* 20 / 28 */
+h4 { font-size: 1.125rem;line-height: 1.5rem;}  /* 18 / 24 */
+
+
 .font-heading { font-family: var(--heading); }
 .font-body { font-family: var(--body); }
 

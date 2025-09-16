@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import Switch from "@/components/ui/Switch";
 import Button from "@/components/ui/Button";
 import Tooltip from "@/components/ui/Tooltip";
+import { H2 } from "../ui/Type";
 
 /**
  * BhavaBala – Shadbala DNA implementation
@@ -129,6 +130,37 @@ const WHAT_IF_HOUSE: Record<number, { strong: string; weak: string }> = {
   12: { strong: "Rest heals; rich inner life.", weak: "Taper overstimulation; close tabs literally." },
 };
 
+// Score scale badge — same copy feel as Shadbala
+// Score scale badge — color-coded like Shadbala
+function scaleBadge(value: number) {
+  if (value >= 0.70) {
+    return {
+      text: "Very strong • Boss Mode",
+      className:
+        "border-emerald-400/25 bg-emerald-300/10 text-emerald-300",
+    };
+  }
+  if (value >= 0.55) {
+    return {
+      text: "Average to good • Holding Steady",
+      className:
+        "border-violet-400/25 bg-violet-300/10 text-violet-300"
+    };
+  }
+  if (value >= 0.40) {
+    return {
+      text: "Weak • Needs a Boost",
+      className:
+        "border-amber-400/25 bg-amber-300/10 text-amber-300",
+    };
+  }
+  return {
+    text: "Very weak • Needs Support",
+    className:
+      "border-rose-400/25 bg-rose-300/10 text-rose-300",
+  };
+}
+
 
 // -----------------------
 // Persistence hooks (localStorage)
@@ -150,6 +182,15 @@ function usePersistentToggle(key: string, initial = false) {
   }, [key, value]);
   return [value, setValue] as const;
 }
+
+function houseMicro(h: ExtractedHouse) {
+  const v = h.normalized.total;
+  if (v >= 0.70) return "Boss mode — noticeable results.";
+  if (v >= 0.55) return "Has presence — delivers when you show up.";
+  if (v >= 0.40) return "Muted — manage expectations here.";
+  return "Low now — add support before pushing.";
+}
+
 
 function usePersistentFlag(key: string, initial = true) {
   const [value, setValue] = useState<boolean>(() => {
@@ -330,14 +371,16 @@ function HouseCard({
   const { ref, inView } = useInView<HTMLDivElement>();
   const badge = badgeAbsoluteBhava(h.normalized.total);
   const boss = badge.boss;
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div
       ref={ref}
       className={
         `
-    w-full rounded-2xl border bg-white/5 p-4 transition-all
-    hover:bg-white/5
+    className="w-full rounded-2xl border bg-white/5 p-4 sm:p-5 transition-all
+    hover:bg-white/10
+    grid grid-rows-[auto,auto,1fr,auto]
     ${boss
           ? // Subtle Boss glow (emerald ring + soft outer halo)
           "border-emerald-400/30 ring-1 ring-emerald-400/30 shadow-[0_0_24px_rgba(16,185,129,.18)]"
@@ -349,97 +392,93 @@ function HouseCard({
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-white/80 text-sm">House</span>
-          <button
-            className="text-white text-lg font-semibold underline decoration-transparent hover:decoration-white/30 focus:decoration-white/40"
-            onClick={() => onOpen(h.id)}
-            aria-label={`Open Spotlight for House ${h.id}`}
-          >
-            {h.id}
-          </button>
-          <span className="text-white/70 text-sm truncate">{HOUSE_NAMES[h.id]}</span>
-          {boss && (
-            <Badge className="bg-emerald-500/90 text-white">
-              <Crown className="mr-1 size-3" />
-              Boss
-            </Badge>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1 mt-1 sm:mt-0">
-          {h.theme.slice(0, 2).map((t) => (
-            <Badge key={t} variant="secondary" className="bg-white/10 text-white/80 whitespace-nowrap">
-              {t}
-            </Badge>
-          ))}
+          <h2>House {h.id}</h2>
+          {(() => {
+            const scale = scaleBadge(h.normalized.total);
+            return <Badge className={`px-2 py-1 ${scale.className}`}>{scale.text}</Badge>;
+          })()}
         </div>
       </div>
 
-      <div className="mt-3 flex items-start sm:items-center gap-4">
+      {/* Main visual */}
+      <div className="mt-3 flex items-center gap-4">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: inView ? 1 : 0.95, opacity: inView ? 1 : 0.6 }}>
           <StrengthRing value={h.normalized.total} boss={boss} />
         </motion.div>
-        <div className="flex-1">
-          <PillarRow
-            label={pillarLabel("bhava_drik", classicalOn)}
-            value={h.normalized.bhava_drik}
-            classical={
-              classicalOn
-                ? { virupa: h.classical?.components?.virupa?.bhava_drik, rupa: h.classical?.components?.rupa?.bhava_drik }
-                : undefined
-            }
-          />
-          <PillarRow
-            label={pillarLabel("kendradhi", classicalOn)}
-            value={h.normalized.kendradhi}
-            classical={
-              classicalOn
-                ? { virupa: h.classical?.components?.virupa?.kendradhi, rupa: h.classical?.components?.rupa?.kendradhi }
-                : undefined
-            }
-          />
-
-          {/* Benefic/Malefic chips (no 'Legacy' word) */}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/70">
-            <Badge className="bg-emerald-600/70">+{h.legacy.benefics} benefic</Badge>
-            <Badge className="bg-rose-600/70">{h.legacy.malefics} malefic</Badge>
-            <span className={`${h.legacy.net >= 0 ? "text-emerald-300" : "text-rose-300"}`}>net {h.legacy.net >= 0 ? `+${h.legacy.net}` : h.legacy.net}</span>
-          </div>
-
-          {/* Classical totals inline */}
-          {classicalOn && (
-            <div className="mt-1 text-xs text-white/60 break-words">
-              Total: {Math.round(h.classical?.virupa ?? 0)} virupa • {(h.classical?.rupa ?? 0).toFixed(2)} rupa {h.classical?.tier ? `• ${h.classical.tier}` : ""}
-            </div>
-          )}
-        </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        <Badge variant={badge.boss ? "success" : "secondary"} className={badge.boss ? "bg-emerald-600/90 text-white" : "bg-white/10 text-white/70"}>
-          {badge.boss ? (
-            <>
-              <Crown className="mr-1 size-3" />
-              Very strong • Boss Mode
-            </>
-          ) : (
-            badge.label
-          )}
-        </Badge>
-        <div className="flex items-center gap-2">
-          {compareOn && (
-            <Button
-              variant={pinnedId === h.id ? "secondary" : "ghost"}
-              className="border border-white/10"
-              onClick={() => setPinnedId(pinnedId === h.id ? null : h.id)}
-            >
-              {pinnedId === h.id ? "Unpin" : "Compare"}
-            </Button>
-          )}
-          <Button variant="ghost" className="border border-white/10" onClick={() => onOpen(h.id)}>
-            View breakdown
+      {/* Micro story */}
+      <div className="mt-3 text-white/80 truncate min-h-[20px]" title={houseMicro(h)}>
+        {houseMicro(h)}
+       </div>
+      {/* Actions */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {compareOn && (
+          <Button
+            variant={pinnedId === h.id ? "secondary" : "ghost"}
+            className="border border-white/10"
+            onClick={() => setPinnedId(pinnedId === h.id ? null : h.id)}
+          >
+            {pinnedId === h.id ? "Unpin" : "Compare"}
           </Button>
-        </div>
+        )}
+        <Button variant="ghost" className="border border-white/10" onClick={() => onOpen(h.id)}>
+          View breakdown
+        </Button>
+        <Button
+          variant="ghost"
+          className="border border-white/10"
+          onClick={() => setShowDetails((s) => !s)}
+          aria-expanded={showDetails}
+        >
+          {showDetails ? "Hide details" : "Show details"}
+        </Button>
       </div>
+
+      {/* Optional on-card details (closed by default) */}
+      <AnimatePresence initial={false}>
+        {showDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3">
+              <PillarRow
+                label={pillarLabel("bhava_drik", classicalOn)}
+                value={h.normalized.bhava_drik}
+                classical={
+                  classicalOn
+                    ? { virupa: h.classical?.components?.virupa?.bhava_drik, rupa: h.classical?.components?.rupa?.bhava_drik }
+                    : undefined
+                }
+              />
+              <PillarRow
+                label={pillarLabel("kendradhi", classicalOn)}
+                value={h.normalized.kendradhi}
+                classical={
+                  classicalOn
+                    ? { virupa: h.classical?.components?.virupa?.kendradhi, rupa: h.classical?.components?.rupa?.kendradhi }
+                    : undefined
+                }
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                <Badge className="bg-emerald-600/70">+{h.legacy.benefics} benefic</Badge>
+                <Badge className="bg-rose-600/70">{h.legacy.malefics} malefic</Badge>
+                <span className={`${h.legacy.net >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                  net {h.legacy.net >= 0 ? `+${h.legacy.net}` : h.legacy.net}
+                </span>
+              </div>
+              {classicalOn && (
+                <div className="mt-1 text-xs text-white/60 break-words">
+                  Classical: {Math.round(h.classical?.virupa ?? 0)} virupa • {(h.classical?.rupa ?? 0).toFixed(2)} rupa {h.classical?.tier ? `• ${h.classical.tier}` : ""}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Compare deltas under bars (only when compare is ON and a different house is pinned) */}
       {/* This is placed at the bottom for clarity; move if you prefer near the bars */}
@@ -538,21 +577,26 @@ function HouseSpotlightModal({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="text-white text-xl font-semibold">House {h.id}</div>
-              {badge.boss && (
-                <Badge className="bg-emerald-600/90 text-white">
-                  <Crown className="mr-1 size-3" />
-                  Boss Mode
-                </Badge>
-              )}
+              <span className="text-white/80 text-sm">House</span>
+              <button
+                className="underline decoration-transparent hover:decoration-white/30 focus:decoration-white/40"
+                onClick={() => onOpen(h.id)}
+                aria-label={`Open Spotlight for House ${h.id}`}
+              >
+                <h3 className="inline">{h.id}</h3>
+              </button>
             </div>
-            <div className="mt-1 text-white/80 text-sm">{name}</div>
+            <p className="text-white/70 text-xs">{HOUSE_NAMES[h.id]}</p>
           </div>
-          <Button variant="secondary" className="bg-white/10 text-white hover:bg-white/20" onClick={onClose}>
-            Close
-          </Button>
+          {(() => {
+            const scale = scaleBadge(h.normalized.total);
+            return (
+              <Badge className={`border ${scale.className}`}>
+                {scale.text}
+              </Badge>
+            );
+          })()}
         </div>
-
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-[auto,1fr] gap-6">
           <div className="flex flex-col items-center gap-3">
             <StrengthRing value={h.normalized.total} boss={badge.boss} />
@@ -788,8 +832,8 @@ export default function BhavaBala({ data }: { data: BhavaBalaApi }) {
     <div className="p-2 md:p-3">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-white text-lg md:text-xl font-semibold">Bhava Bala (House Strength)</h2>
+        <div className="heading-shadow-container" data-text="Bhava Bala (House Strength)">
+          <H2 className="hero-heading">Bhava Bala (House Strength)</H2>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-white/80 text-sm">

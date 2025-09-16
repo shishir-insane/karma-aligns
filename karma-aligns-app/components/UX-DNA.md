@@ -1,141 +1,149 @@
-Here’s a concise dev-to-dev handoff on the Shadbala revamp—what I built, why, and how to reuse the same UX DNA elsewhere.
+# 🔑 Handover Notes: Shadbala & BhavaBala UI/UX DNA
 
-# What I shipped (high level)
+This doc is the **handoff between developers** for the Shadbala and BhavaBala modules.
+It captures *what we built, why we built it that way, and how to reuse the same UX DNA* across future modules.
 
-* **Two audiences, one UI**:
+---
 
-  * **Gen-Z mode (default):** normalized scores (0–1), narrative micro-stories, swipeable planet cards, dynamic “Quick Reads,” subtle gamification (levels), “Boss Mode” highlighting (≥ 0.70), and a **Spotlight** modal per planet.
-  * **Classical layer (opt-in):** Rūpa/Virūpa values surfaced inline via a **“Classical values”** toggle—no layout shift, just extra text for astrologers.
-* **Progressive disclosure**: collapsible section, expandable planet breakdown, tooltips for Sanskrit terms revealed on click (one open at a time).
-* **Mobile-first**: horizontal swipe cards on mobile, grid on desktop; badges wrap to next line to avoid overflow; no horizontal scrolling needed for tables we render in this section.
-* **Sticky mental model**: Six pillars consistently labeled with Gen-Z friendly names + Sanskrit tooltips.
+## 🌌 Two Audiences, One UI
 
-# Key UX patterns (replicable)
+* **Gen-Z Mode (default)**
 
-1. **Numbers → Stories → Visuals → Interactions**
+  * Normalized scores (0–1)
+  * Micro-stories (“Quick Reads”)
+  * Swipeable cards (mobile-first)
+  * Dynamic Boss Mode highlighting (≥0.70)
+  * Spotlight modal per planet/house with “What-If” copy
+* **Classical Mode (toggle)**
 
-   * **Numbers**: normalized totals + per-pillar values; optional classical Rūpa/Virūpa.
-   * **Stories**: “Quick Reads” compares strongest planets and Sun↔Moon (“feelings > ego”).
-   * **Visuals**: Strength ring (conic progress), mini radar for 6 pillars, glow/pulse on strong values.
-   * **Interactions**: Spotlight modal (tap planet), swipeable cards, collapsible breakdown, one-time nudge.
+  * Inline Rūpa/Virūpa values
+  * Sanskrit terms surfaced
+  * Tooltips for deeper learning
 
-2. **Boss Mode affordance**
+---
 
-   * **Threshold**: ≥ 0.70 normalized → “Very strong • Boss Mode”.
-   * **Affordances**: green ring glow, 👑 chip on the planet, “Boss pillar” chip on any pillar ≥ 0.70, top card halo.
-   * **Dynamic tips**: “Power cluster…” when 3+ planets are Boss; planet-specific nudges when a single planet dominates.
+## 🧩 UX Patterns (Core DNA)
 
-3. **Classical compatibility without scaring casuals**
+### 1. **Numbers → Stories → Visuals → Interactions**
 
-   * A **toggle** adds Rūpa/Virūpa inline to the same lines—no new tables.
-   * Sanskrit concepts hidden behind **clickable “?”** tooltips; one open at a time, dismiss on click-away.
+* **Numbers**: normalized totals, per-pillar values (Shadbala: 6 pillars, BhavaBala: 2 pillars), optional classical values.
+* **Stories**: Quick Reads summarizing strongest vs weakest comparisons.
+* **Visuals**: conic strength ring, mini-radar (Shadbala), 12-spoke wheel (BhavaBala).
+* **Interactions**: Spotlight modal, swipeable cards, collapsible details, one-time nudges.
 
-4. **Progressive disclosure & persistence**
+### 2. **Boss Mode Affordance**
 
-   * **Collapsible section** (state persisted via `localStorage`).
-   * **Classical toggle** persisted too.
-   * **One-time nudge** (“Tap for Spotlight ↗”) persisted after first open.
+* **Threshold**: ≥ 0.70 → Boss Mode.
+* **Affordances**: emerald glow (card + ring), 👑 chip, “Boss” scale badge, halo highlight.
+* **Dynamic tips**: cluster messages if 3+ Boss planets/houses, or specific nudges when one dominates.
 
-# Technical building blocks (drop-in patterns)
+### 3. **Progressive Disclosure**
 
-* **Components**
+* Cards show only **ring + one-liner + scale badge** by default.
+* Details (pillar bars, benefic/malefic, classical totals) are hidden in a **Show details** fold or Spotlight.
+* Keeps parity with Shadbala: subtle, roomy cards with depth available on tap.
 
-  * `Shadbala.tsx` (section wrapper; collapse & classical toggle, layout)
-  * `PlanetCard` (per-planet ring + radar + breakdown)
-  * `PillarRow` (6 rows, tooltip + bar + badge + classical inline)
-  * `StrengthRing` (conic meter + pulse on strong)
-  * `SpotlightModal` (What-If copy, life-areas chips, classical totals)
-  * `ComparisonsStories` (Spotify-style deltas + **dynamic, context-aware tip**)
-  * `RadarChart` (6-axis polygon; lightweight SVG)
-* **Hooks / utils**
+### 4. **Mobile-First**
 
-  * `usePersistentToggle`, `usePersistentFlag` → `localStorage` backed UX state
-  * `useOneTimeNudge` → “discoverability” hint that disappears forever after first use
-  * `useInView` → animate/charge visuals when cards enter viewport
-  * `badgeAbsolute()` → centralizes thresholds, text, and **isBoss** flag
-  * `extractShadbala()` → **NEW+OLD** API shape compatible (normalized + virupa/rupa)
-* **Data contracts supported**
+* Default: horizontal swipe (`flex + snap-x`)
+* Desktop: grid (Shadbala → planet grid; BhavaBala → 3 cols)
+* Text/icons wrap, no overflow.
+* Spotlight/Modal: mobile-friendly with click-to-open tooltips (no hover dependencies).
+
+---
+
+## 🎨 Visual + Copy System
+
+* **Color Palette**
+
+  * Boss → Emerald
+  * Holding Steady → Violet/Fuchsia
+  * Needs Boost → Amber
+  * Needs Support → Rose
+
+* **Scale Badges**
+
+  * Shadbala + BhavaBala both use text-coded badges with above colors, e.g.
+
+    * “Very strong • Boss Mode” (emerald)
+    * “Average to good • Holding Steady” (violet)
+    * “Weak • Needs a Boost” (amber)
+    * “Very weak • Needs Support” (rose)
+
+* **Micro-Stories**
+
+  * Always 3 Quick Reads.
+  * Shadbala: strongest planets, Sun↔Moon egos/feelings.
+  * BhavaBala: house axis comparisons (1↔7, 4↔10, 5↔11).
+
+* **Explaners**
+
+  * Section footers explain *what the measure is*, *how it’s calculated*, and *how to read the scale* in **Gen-Z language** (with Sanskrit shown only when toggle on).
+
+---
+
+## 🛠 Technical Building Blocks
+
+### Components (shared patterns)
+
+* **Section wrapper**: collapse toggle, classical toggle, view switch (wheel/grid), compare mode.
+* **Card**: minimal layout → ring, scale badge, micro-story, CTA (“View breakdown”).
+* **StrengthRing**: conic SVG, emerald pulse for Boss.
+* **QuickReads**: rail of 3 cards with micro-stories.
+* **SpotlightModal**: breakdowns, classical totals, What-If copy, tags.
+* **Tooltip**: click-to-open, mobile-friendly.
+
+### Hooks
+
+* `usePersistentToggle` / `usePersistentFlag` → localStorage backed toggles.
+* `useOneTimeNudge` → discoverability hints.
+* `useInView` → animate rings/cards only when scrolled into view.
+
+### Data Contracts
+
+* **Shadbala**:
 
   * `data.shadbala.components.normalized[planet][pillar]`
-  * `data.shadbala.components.virupa_rupa[planet]` (components + totals)
-  * `data.shadbala.totals.normalized[planet]`
-  * Legacy: `data.shadbala.components[planet]`, `data.shadbala.total[planet]`
+  * `data.shadbala.virupa_rupa[planet]`
+* **BhavaBala**:
 
-# How to replicate in other sections
+  * `data.bhava_bala.normalized[house]`
+  * `data.bhava_bala.virupa_rupa[house]`
+  * `data.bhava_bala.legacy_counts[]`
 
-Use the same 4-layer recipe, plus Boss Mode when meaningful:
+---
 
-1. **Ashtakavarga**
+## 📐 Layout Notes
 
-   * **Numbers**: normalized or total bindus per planet/house.
-   * **Stories**: “Your 11th house (gains) is peaking vs 5th (joy/creativity). Expect collabs > solo play.”
-   * **Visuals**: house wheel heatmap (12-spoke), per-house bars.
-   * **Interactions**: tap a house → Spotlight with themes, “What if strong/weak,” classical verse optional.
+* Cards sized consistently across rows (min-heights reserved so micro-stories don’t cause taller cards).
+* Scale badges align right in header, titles left.
+* Spotlight opens with consistent layout: header (title + badge), ring + breakdowns, What-If, chips.
 
-2. **Planetary Positions (table)**
+---
 
-   * **Numbers**: sign, degree, nakshatra pada, dignity.
-   * **Stories**: small badges—Exalted/Own/Friendly/Enemy/Debilitated with color coding.
-   * **Visuals**: sign glyphs, subtle glow for dignities; progress bar for degree within sign.
-   * **Interactions**: row click → Spotlight: “What this placement means today”; tooltips for dignity math.
+## 🧭 Replication Guide
 
-3. **Yogas (from kundli\_predictions)**
+When building new sections (e.g., **Ashtakavarga**, **Yogas**, **ACG**):
 
-   * **Numbers**: strength/confidence if provided.
-   * **Stories**: short headline (“Dhana Yoga → wealth timing favored”).
-   * **Visuals**: card per yoga with iconography; tag chips (Wealth, Fame, Learning).
-   * **Interactions**: expand for classical reference + modern interpretation; bookmark/favorite.
+1. Extract data into normalized + classical.
+2. Provide 3 Quick Reads stories based on comparisons.
+3. Show ring/wheel visual.
+4. Add scale badge with thresholds.
+5. Keep cards minimal; push details into Spotlight or Details fold.
+6. Add Explain-it footer for Gen-Z clarity.
 
-4. **ACG (astrocartography)**
+---
 
-   * **Numbers**: top 3 cities by Jupiter/Venus lines near user’s lat/lon.
-   * **Stories**: “Venus line through Lisbon → social glow & creative collabs.”
-   * **Visuals**: mini map snapshot + city chips.
-   * **Interactions**: tap a city → modal with do/don’t, time to visit, “What if now?”
+## 🔮 Future Ideas
 
-# Accessibility & responsiveness
+* Compare mode across planets/houses side-by-side.
+* Time slider (transits) to see Boss shifts.
+* Achievement feed (“Unlocked Boss House 10 this month”).
+* User-tunable thresholds.
 
-* Mobile-first layout; swipe lists (`snap-x`) for dense content.
-* Keyboard access on clickable cards (focus ring).
-* Text contrast maintained (indigo/black background + white/70 copy).
-* Tooltips open on **click** (not hover) → mobile-friendly; one open at a time; click-away to dismiss.
+---
 
-# Performance notes
+👉 **Key takeaway for devs**: Always honor the **UX DNA** → *Numbers → Stories → Visuals → Interactions* with Boss Mode, classical toggle, and mobile-first swipe/grid. That keeps the product consistent, approachable for casuals, but still deep for astrologers.
 
-* All charts are **SVG** + Tailwind gradients—no heavy libs.
-* IntersectionObserver gates animations until in-view.
-* Minimal state; persistence via `localStorage`.
-* No third-party deps added.
 
-# Theming & thresholds
-
-* **Boss Mode**: ≥ 0.70 normalized (tunable in `badgeAbsolute`).
-* Secondary thresholds: 0.55–0.70 “Holding Steady”, 0.40–0.55 “Needs a Boost”, < 0.40 “Needs Support”.
-* Keep the palette consistent: emerald for Boss, violet/fuchsia for neutrals, amber/rose for weak.
-
-# Copy system (extendable)
-
-* Planet “What-If” text and life-area tags live in a simple map (`WHAT_IF`).
-* Add/translate copy per section the same way (e.g., houses, yogas).
-* Keep **micro-stories** short, present-tense, and relatable (fitness, gaming, Spotify metaphors).
-
-# Integration checklist (for any new section)
-
-* [ ] Data extractor: accept NEW and legacy shapes.
-* [ ] Default to normalized for Gen-Z; optional classical toggle.
-* [ ] Spotlight modal with: ring/heat, level, what-if, areas, classical stats.
-* [ ] Quick Reads: 2–3 story cards + dynamic tip (context-aware).
-* [ ] Boss Mode affordances if thresholds make sense.
-* [ ] Collapsible wrapper; store open/closed in `localStorage`.
-* [ ] Tooltips on click; one open at a time.
-* [ ] Swipe on mobile, grid on desktop.
-* [ ] a11y: labels, focus ring, aria-expanded on toggles.
-
-# Future ideas (optional backlog)
-
-* Compare mode: allow “pin” of a planet across sections.
-* User-tuned thresholds (advanced settings).
-* Time slider (transits) to see Boss Mode shift over months.
-* Achievement feed (“Unlocked Boss Mode Saturn this quarter”).
-
-If you mirror these patterns—**story cards, spotlight modal, boss highlighting, classical toggle**—across Ashtakavarga, Positions, Yogas, and ACG, the app will feel coherent and delight both **Gen-Z readers** and **classical practitioners** without forking the UI.
+Would you like me to create a **shared design tokens + component map** (e.g., ka/ui/Badge, ka/ui/StrengthRing, ka/ui/SpotlightModal) so Shadbala and BhavaBala truly share one codebase instead of parallel ones? That would lock in the DNA for all future modules.
