@@ -741,3 +741,45 @@ html {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- KA Card: soft border + subtle hover (matches your reference snippet) --- */
+.ka-card {
+  /* you already set rounded/backdrop/border via your existing rule */
+  border-color: rgba(255,255,255,0.10) !important; /* soft border */
+  background: rgba(255,255,255,0.05);              /* bg-white/5 */
+  transition: background-color .18s ease, box-shadow .2s ease, border-color .18s ease;
+}
+
+.ka-card-hover {
+  /* subtle hover tint + soft violet hover shadow */
+  box-shadow: 0 0 0 0 rgba(0,0,0,0);
+}
+.ka-card-hover:hover {
+  background: rgba(255,255,255,0.08);              /* hover:bg-white/8 */
+  box-shadow: 0 10px 30px rgba(147, 51, 234, .25); /* hover:shadow-[0_10px_30px_rgba(147,51,234,.25)] */
+}
+
+/* --- Boss modifier: extra glow layered on top of the soft border --- */
+.ka-card--boss {
+  border-color: rgba(16,185,129,.35) !important;   /* emerald-300/35 */
+  box-shadow:
+    0 0 0 1px rgba(16,185,129,.22),
+    0 6px 28px rgba(16,185,129,.20);
+}
+
+/* Text helpers that don't depend on Tailwind slash-opacity */
+.text-body   { color: rgba(255,255,255,.80); } /* primary body */
+.text-dim    { color: rgba(255,255,255,.60); } /* secondary */
+.text-faint  { color: rgba(255,255,255,.50); } /* tertiary */
+.text-strong { color: rgba(255,255,255,.90); } /* headline-ish */
+
+/* Make all cards default to good body contrast */
+.ka-card { color: rgba(255,255,255,.85); }
+
+@media print {
+  .ka-card { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff !important; }
+  a[href]:after { content: ""; }
+}
+
+

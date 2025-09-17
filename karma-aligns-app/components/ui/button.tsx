@@ -29,7 +29,7 @@ export default function Button({
   return (
     <button
       className={[
-        "inline-flex items-center justify-center gap-2 rounded-xl border border-white/10",
+        "cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-white/10",
         "transition-colors focus:outline-none focus:ring-2 focus:ring-white/40",
         variants[variant],
         sizes[size],
