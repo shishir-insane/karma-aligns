@@ -41,6 +41,8 @@ import VirupaByGrahaTable from "@/components/classical/VirupaByGrahaTable";
 import ReferenceButton from "@/components/classical/ReferenceButton";
 import PrintButton from "@/components/ui/PrintButton";
 import WiggleOnMount from "@/components/motion/WiggleOnMount";
+import MoreMenu from "@/components/ui/MoreMenu";
+
 
 // ---------- Types ----------
 type LegacyCount = { house: number; benefics: number; malefics: number; net: number };
@@ -527,7 +529,7 @@ export default function BhavaBala({ data }: { data: BhavaBalaApi }) {
             </span>
             <Switch checked={wheelView} onCheckedChange={setWheelView} />
           </div>
-
+      
           {/* Classical toggle */}
           <div className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-white/10 px-2.5 py-1.5 text-xs text-dim hover:bg-white/5">
             <span className="inline-flex items-center gap-1">
@@ -536,17 +538,7 @@ export default function BhavaBala({ data }: { data: BhavaBalaApi }) {
             </span>
             <Switch checked={classicalOn} onCheckedChange={setClassicalOn} />
           </div>
-
-          {/* Learn link */}
-          <Link
-            href="/bhavabala"
-            className="cursor-pointer shrink-0 text-xs rounded-xl border border-white/10 px-3 py-1.5 hover:bg-white/5 text-white/80 inline-flex items-center gap-1"
-            aria-label="Learn Bhava Bala"
-          >
-            <HelpCircle className="size-3.5" />
-            <span className="hidden sm:inline">Learn</span>
-          </Link>
-
+      
           {/* Show/Hide */}
           <Button
             size="sm"
@@ -567,20 +559,60 @@ export default function BhavaBala({ data }: { data: BhavaBalaApi }) {
               </>
             )}
           </Button>
-
-          {/* Tutor toggle */}
-          <div className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-white/10 px-2.5 py-1.5 text-xs text-dim hover:bg-white/5">
-            <span className="inline-flex items-center gap-1">
-              <span className="size-3.5 inline-block">🎓</span>
-              <span className="hidden sm:inline">Tutor</span>
-            </span>
-            <Switch checked={tutorMode} onCheckedChange={setTutorMode} />
+      
+          {/* --- Small screens: collapse these into a More menu --- */}
+          <div className="sm:hidden shrink-0">
+            <MoreMenu
+              items={
+                <>
+                  {/* Tutor toggle */}
+                  <div className="inline-flex items-center justify-between gap-2 rounded-xl border border-white/10 px-2.5 py-1.5 text-xs text-dim">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="size-3.5 inline-block">🎓</span>
+                      Tutor
+                    </span>
+                    <Switch checked={tutorMode} onCheckedChange={setTutorMode} />
+                  </div>
+                  {/* Learn */}
+                  <Link
+                    href="/bhavabala"
+                    className="rounded-xl border border-white/10 px-2.5 py-1.5 text-xs text-white/80 hover:bg-white/5"
+                  >
+                    Learn Bhava Bala ↗
+                  </Link>
+                  {/* Reference */}
+                  <ReferenceButton />
+                  {/* Print */}
+                  <PrintButton />
+                </>
+              }
+            />
           </div>
-
-          <ReferenceButton />
-          <PrintButton />
+      
+          {/* --- md+ screens: show these inline --- */}
+          <div className="hidden sm:flex items-center gap-2">
+            <div className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-white/10 px-2.5 py-1.5 text-xs text-dim hover:bg-white/5">
+              <span className="inline-flex items-center gap-1">
+                <span className="size-3.5 inline-block">🎓</span>
+                <span className="hidden sm:inline">Tutor</span>
+              </span>
+              <Switch checked={tutorMode} onCheckedChange={setTutorMode} />
+            </div>
+      
+            <Link
+              href="/bhavabala"
+              className="cursor-pointer shrink-0 text-xs rounded-xl border border-white/10 px-3 py-1.5 hover:bg-white/5 text-white/80 inline-flex items-center gap-1"
+              aria-label="Learn Bhava Bala"
+            >
+              <HelpCircle className="size-3.5" />
+              <span className="hidden sm:inline">Learn</span>
+            </Link>
+      
+            <ReferenceButton />
+            <PrintButton />
+          </div>
         </ActionBar>
-      }
+      }      
     >
       {/* Fun fact — full-width, below the header controls, never overflows */}
       <div className="-mx-2 px-2 md:mx-0 md:px-0 mt-2">
