@@ -782,4 +782,52 @@ html {
   a[href]:after { content: ""; }
 }
 
+/* === BhavaBala dark-blue theme (scoped) === */
+.ka-bhava {
+  /* background gradient for the whole section area */
+  --bhava-bg-start: #0a1020;  /* deep navy */
+  --bhava-bg-end:   #0b1228;  /* indigo-navy */
+  --bhava-card-bg:  rgba(15, 23, 42, 0.55);  /* slate-900 @ ~55% */
+  --bhava-card-hover: rgba(148,163,184,.08); /* slate-400/8 */
+  --bhava-border: rgba(148,163,184,.18);     /* slate-400/18 */
+
+  background: linear-gradient(180deg, var(--bhava-bg-start), var(--bhava-bg-end));
+  border-radius: 1.25rem; /* rounded-2xl */
+}
+
+/* soften card + hover/border inside the theme */
+.ka-bhava .ka-card {
+  background-color: var(--bhava-card-bg) !important;
+  border-color: var(--bhava-border) !important;
+}
+
+.ka-bhava .ka-card-hover:hover {
+  background-color: var(--bhava-card-hover) !important;
+}
+
+/* action chips & small controls inside the themed header */
+.ka-bhava .ka-chip {
+  border-color: var(--bhava-border) !important;
+  background-color: var(--bhava-card-bg) !important;
+}
+
+/* keep Boss glow readable on dark-blue */
+.ka-bhava .ka-card--boss {
+  box-shadow:
+    0 0 0 1px rgba(16,185,129,.18),
+    0 10px 30px rgba(16,185,129,.18) !important;
+}
+
+/* optional: dim divider lines a touch */
+.ka-bhava hr, .ka-bhava .border-white\/10 {
+  border-color: var(--bhava-border) !important;
+}
+
+@media print {
+  .print-hidden { display: none !important; }
+  body, .ka-card { background: #fff !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a[href]:after { content: ""; }
+}
+
+
 
