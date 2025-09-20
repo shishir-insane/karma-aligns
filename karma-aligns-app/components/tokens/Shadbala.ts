@@ -1,5 +1,5 @@
 // tokens/Shadbala.ts
-import type { PlanetId, PillarKey } from "@/types/shadbala";
+import type { PlanetId, PillarKey } from "@/components/types/shadbala";
 
 export const PLANETS: PlanetId[] = [
   "Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"

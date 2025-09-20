@@ -165,39 +165,24 @@ function PlanetCard({
   const boss = isBoss(p.normalized.total);
   const Wrapper = boss ? BossHouseCard : NonBossHouseCard;
 
+  const summary: React.ReactNode = (
+    <>
+      {oneLiner}
+      {weakTip ? <span className="block mt-1 text-xs opacity-75">Tip: {weakTip}</span> : null}
+    </>
+  );
+
   return (
-    <Wrapper>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="font-heading text-base leading-tight">{p.id}</h3>
-          <div className="mt-1 flex flex-wrap gap-2">{p.theme.map((t) => <Pill key={t}>{t}</Pill>)}</div>
-        </div>
-        <AnimatedScaleBadge value={p.normalized.total} />
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-4">
-        <div className="flex items-center justify-center">
-          <StrengthRing value={p.normalized.total} boss={boss} />
-        </div>
-        <div className="text-sm opacity-90">
-          {oneLiner}
-        </div>
-      </div>
-
-      {p.normalized.total < 0.4 && (
-        <div className="mt-3">
-          <QuestCallout text={weakTip ?? "Low-battery planet — pick one tiny support action."} />
-        </div>
-      )}
-
-      <div className="mt-3">
-        <Button size="sm" variant="secondary" onClick={() => onOpen(p.id)}>
-          View Spotlight
-        </Button>
-      </div>
-    </Wrapper>
+    <Wrapper
+      title={p.id}
+      tags={PLANET_THEMES[p.id]}
+      score={p.normalized.total}
+      oneLiner={summary}
+      onOpen={() => onOpen(p.id)}
+    />
   );
 }
+
 
 /* ---------- Quick Reads ---------- */
 function QuickReadsRailPlanets({
